@@ -1,5 +1,9 @@
-﻿// This code is licensed under the ekeleze Free Use License.
-// Please refer to ../LICENSE.md for the full license.
+/* This code is licensed under the ekzFreeUse license
+ * If a license wasn't included with the program,
+ * refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md */
+
+/* This version of SVGAIIColor is outdated, for
+ * the new version, refer to https://github.com/9xbt/mango/blob/main/mango/SVGAIITerminal/SVGAIIColor.cs */
 
 using PrismAPI.Graphics;
 
