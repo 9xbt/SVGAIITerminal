@@ -2,12 +2,10 @@
  * If a license wasn't included with the program,
  * refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md */
 
-using System;
 using Cosmos.System;
 using PrismAPI.Hardware.GPU;
 using PrismAPI.Graphics;
 using PrismAPI.Graphics.Fonts;
-using IL2CPU.API.Attribs;
 
 public class SVGAIITerminal
 {
@@ -16,77 +14,78 @@ public class SVGAIITerminal
     /// <summary>
     /// Creates an instance of <see cref="SVGAIITerminal"/>
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    public SVGAIITerminal(int Width, int Height)
+    /// <param name="width">Terminal width</param>
+    /// <param name="height">Terminal height</param>
+    /// <param name="font">Terminal font</param>
+    public SVGAIITerminal(int width, int height, Font font)
     {
-        this.Font = new Font(IBM_btf_raw!, 16);
-        this.Width = Width / (Font.Size / 2);
-        this.Height = Height / Font.Size;
-        this.Screen = Display.GetDisplay((ushort)Width, (ushort)Height);
-        this.Contents = Screen;
-        this.UpdateRequest = () =>
+        Display screen = Display.GetDisplay((ushort)width, (ushort)height);
+
+        Font = font;
+        Width = width / (Font.Size / 2);
+        Height = height / Font.Size;
+        Canvas = screen;
+        UpdateRequest = () =>
         {
-            Screen.DrawImage(0, 0, this.Contents, false);
-            Screen.Update();
+            screen.DrawImage(0, 0, this.Canvas, false);
+            screen.Update();
         };
     }
 
     /// <summary>
     /// Creates an instance of <see cref="SVGAIITerminal"/>
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Screen">Screen the terminal renders to</param>
-    public SVGAIITerminal(int Width, int Height, Display Screen)
+    /// <param name="width">Terminal width</param>
+    /// <param name="height">Terminal height</param>
+    /// <param name="font">Terminal font</param>
+    /// <param name="screen">Screen the terminal renders to</param>
+    public SVGAIITerminal(int width, int height, Font font, Display screen)
     {
-        this.Font = new Font(IBM_btf_raw!, 16);
-        this.Width = Width / (Font.Size / 2);
-        this.Height = Height / Font.Size;
-        this.Contents = Screen;
-        this.UpdateRequest = () =>
+        Font = font;
+        Width = width / (font.Size / 2);
+        Height = height / font.Size;
+        Canvas = screen;
+        UpdateRequest = () =>
         {
-            Screen.DrawImage(0, 0, this.Contents, false);
-            Screen.Update();
+            screen.DrawImage(0, 0, this.Canvas, false);
+            screen.Update();
         };
     }
 
     /// <summary>
     /// Creates an instance of <see cref="SVGAIITerminal"/>
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Font">Terminal font</param>
-    /// <param name="Screen">Screen the terminal renders to</param>
-    public SVGAIITerminal(int Width, int Height, Font Font, Display Screen)
+    /// <param name="width">Terminal width</param>
+    /// <param name="height">Terminal height</param>
+    /// <param name="font">Terminal font</param>
+    /// <param name="updateRequest">Update request action, user can manually manage where and how to render the terminal</param>
+    public SVGAIITerminal(int width, int height, Font font, Action updateRequest)
     {
-        this.Font = Font;
-        this.Width = Width / (Font.Size / 2);
-        this.Height = Height / Font.Size;
-        this.Contents = Screen;
-        this.UpdateRequest = () =>
-        {
-            Screen.DrawImage(0, 0, this.Contents, false);
-            Screen.Update();
-        };
+        Font = font;
+        Width = width / (font.Size / 2);
+        Height = height / font.Size;
+        Canvas = new Canvas((ushort)Width, (ushort)Height);
+        UpdateRequest = updateRequest;
     }
+
+    #endregion
+    
+    #region Properties
 
     /// <summary>
-    /// Creates an instance of <see cref="SVGAIITerminal"/>
+    /// The color of the pixel at the specified X & Y coordinates
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Font">Terminal font</param>
-    /// <param name="UpdateRequest">Update request action, user can manually manage where and how to render the terminal</param>
-    public SVGAIITerminal(int Width, int Height, Font Font, Action UpdateRequest)
+    /// <param name="x">X coordinate</param>
+    /// <param name="y">Y coordinate</param>
+    public Color this[int x, int y]
     {
-        this.Font = Font;
-        this.Width = Width / (Font.Size / 2);
-        this.Height = Height / Font.Size;
-        this.UpdateRequest = UpdateRequest;
-        this.Contents = new Canvas((ushort)Width, (ushort)Height);
+        get => Canvas[x, y];
+        set
+        {
+            Canvas[x, y] = value;
+        }
     }
-
+    
     #endregion
 
     #region Methods
@@ -96,9 +95,9 @@ public class SVGAIITerminal
     /// </summary>
     public void Clear()
     {
-        Contents.Clear();
-        CursorX = 0;
-        CursorY = 0;
+        Canvas.Clear();
+        CursorLeft = 0;
+        CursorTop = 0;
     }
 
     /// <summary>
@@ -120,15 +119,23 @@ public class SVGAIITerminal
 
             switch (c)
             {
+                case '\r':
+                    CursorLeft = 0;
+                    break;
+                
                 case '\n':
-                    CursorX = 0;
-                    CursorY++;
+                    CursorLeft = 0;
+                    CursorTop++;
+                    break;
+                
+                case '\t':
+                    Write(new string(' ', 4));
                     break;
 
                 default:
-                    Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                    Contents.DrawString(Font.Size / 2 * CursorX, Font.Size * CursorY, c.ToString(), Font, color);
-                    CursorX++;
+                    Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                    Canvas.DrawString(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, c.ToString(), Font, color);
+                    CursorLeft++;
                     break;
             }
         }
@@ -149,43 +156,42 @@ public class SVGAIITerminal
     /// <param name="color">String color</param>
     public void WriteLine(object str, Color color) => Write(str + "\n", color);
 
-    public ConsoleKeyInfo ReadKey(bool intercept = true)
+    /// <summary>
+    /// Gets input from the user
+    /// </summary>
+    /// <param name="intercept">If set to false, the key pressed will be printed to the terminal</param>
+    /// <returns>Key pressed</returns>
+    public ConsoleKeyInfo ReadKey(bool intercept = false)
     {
         while (true)
         {
             TryDrawCursor();
 
-            if (KeyboardManager.TryReadKey(out var key))
-            {
-                if (intercept == false)
-                {
-                    Write(key.KeyChar);
-                }
+            if (!KeyboardManager.TryReadKey(out var key)) continue;
+            if (!intercept) Write(key.KeyChar);
 
-                bool xShift = (key.Modifiers & ConsoleModifiers.Shift) == ConsoleModifiers.Shift;
-                bool xAlt = (key.Modifiers & ConsoleModifiers.Alt) == ConsoleModifiers.Alt;
-                bool xControl = (key.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control;
-
-                return new ConsoleKeyInfo(key.KeyChar, key.Key.ToConsoleKey(), xShift, xAlt, xControl);
-            }
+            return new ConsoleKeyInfo(key.KeyChar, key.Key.ToConsoleKey(),
+                (key.Modifiers & ConsoleModifiers.Shift) == ConsoleModifiers.Shift,
+                (key.Modifiers & ConsoleModifiers.Alt) == ConsoleModifiers.Alt,
+                (key.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control);
         }
     }
 
-    public string LastInput;
+    // TODO: fix this shit
+    public string LastInput = string.Empty;
 
     /// <summary>
     /// Gets input from the user
     /// </summary>
-    /// <returns>Text inputted by user</returns>
+    /// <returns>Text inputted</returns>
     public string ReadLine()
     {
         ForceDrawCursor();
 
-        int startX = CursorX, startY = CursorY;
-        string returnValue = string.Empty;
-
-        bool reading = true;
-        while (reading)
+        int startX = CursorLeft, startY = CursorTop;
+        var input = string.Empty;
+        
+        for (;;)
         {
             TryDrawCursor();
 
@@ -194,32 +200,22 @@ public class SVGAIITerminal
                 switch (key.Key)
                 {
                     case ConsoleKeyEx.Enter:
-                        Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                        CursorX = 0;
-                        CursorY++;
+                        Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                        CursorLeft = 0;
+                        CursorTop++;
                         TryScroll();
-                        LastInput = returnValue;
-                        reading = false;
-                        break;
+                        // TODO: add last input handler
+                        return input;
 
                     case ConsoleKeyEx.Backspace:
-                        if (!(CursorX == startX && CursorY == startY))
+                        if (!(CursorLeft == startX && CursorTop == startY))
                         {
-                            if (CursorX == 0)
-                            {
-                                Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                                CursorY--;
-                                CursorX = Contents.Width / (Font.Size / 2) - 1;
-                                Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                            }
-                            else
-                            {
-                                Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                                CursorX--;
-                                Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                            }
+                            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                            CursorTop -= CursorLeft == 0 ? 1 : 0;
+                            CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
+                            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
 
-                            returnValue = returnValue.Remove(returnValue.Length - 1); // Remove the last character of the string
+                            input = input.Remove(input.Length - 1); // Remove the last character of the string
                         }
 
                         ForceDrawCursor();
@@ -227,20 +223,25 @@ public class SVGAIITerminal
 
                     case ConsoleKeyEx.Tab:
                         Write('\t');
-                        returnValue += new string(' ', 4);
-
+                        input += new string(' ', 4);
+                        
                         ForceDrawCursor();
                         break;
 
                     case ConsoleKeyEx.UpArrow:
                         SetCursorPosition(startX, startY);
-                        Write(new string(' ', returnValue.Length));
+                        Write(new string(' ', input.Length));
                         SetCursorPosition(startX, startY);
                         Write(LastInput);
-                        returnValue = LastInput;
+                        input = LastInput;
 
                         ForceDrawCursor();
                         break;
+                    
+                    // TODO: DownArrow
+                    // TODO: LeftArrow
+                    // TODO: RightArrow
+                    // TODO: L
 
                     default:
                         if (KeyboardManager.ControlPressed)
@@ -248,15 +249,15 @@ public class SVGAIITerminal
                             if (key.Key == ConsoleKeyEx.L)
                             {
                                 Clear();
-                                returnValue = string.Empty;
-                                reading = false;
+                                // TODO: add last input handler
+                                return string.Empty;
                             }
                         }
                         else
                         {
                             Write(key.KeyChar.ToString());
                             TryScroll();
-                            returnValue += key.KeyChar;
+                            input += key.KeyChar;
                         }
 
                         ForceDrawCursor();
@@ -264,8 +265,6 @@ public class SVGAIITerminal
                 }
             }
         }
-
-        return returnValue;
     }
 
     /// <summary>
@@ -275,8 +274,8 @@ public class SVGAIITerminal
     /// <param name="y">Y coordinate</param>
     public void SetCursorPosition(int x, int y)
     {
-        CursorX = x;
-        CursorY = y;
+        CursorLeft = x;
+        CursorTop = y;
     }
 
     /// <summary>
@@ -285,7 +284,7 @@ public class SVGAIITerminal
     /// <returns>X and Y cursor coordinates</returns>
     public (int Left, int Top) GetCursorPosition()
     {
-        return (CursorX, CursorY);
+        return (CursorLeft, CursorTop);
     }
 
     /// <summary>
@@ -293,28 +292,25 @@ public class SVGAIITerminal
     /// </summary>
     /// <param name="freq">Sound frequency</param>
     /// <param name="duration">Sound duration</param>
-    public void Beep(uint freq = 800, uint duration = 125)
-    {
-        PCSpeaker.Beep(freq, duration);
-    }
+    public void Beep(uint freq = 800, uint duration = 125) => PCSpeaker.Beep(freq, duration);
 
     /// <summary>
     /// Try to scroll terminal
     /// </summary>
     private void TryScroll()
     {
-        if (CursorX >= Width)
+        if (CursorLeft >= Width)
         {
-            CursorX = 0;
-            CursorY++;
+            CursorLeft = 0;
+            CursorTop++;
         }
 
-        while (CursorY >= Height)
+        while (CursorTop >= Height)
         {
-            Contents.DrawImage(0, -Font.Size, Contents, false);
-            Contents.DrawFilledRectangle(0, Contents.Height - Font.Size, Contents.Width, Font.Size, 0, BackgroundColor);
+            Canvas.DrawImage(0, -Font.Size, Canvas, false);
+            Canvas.DrawFilledRectangle(0, Canvas.Height - Font.Size, Canvas.Width, Font.Size, 0, BackgroundColor);
             UpdateRequest?.Invoke();
-            CursorY--;
+            CursorTop--;
         }
     }
 
@@ -323,8 +319,11 @@ public class SVGAIITerminal
     /// </summary>
     private void ForceDrawCursor()
     {
-        Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, ForegroundColor);
-        UpdateRequest?.Invoke();
+        if (CursorVisible)
+        {
+            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, ForegroundColor);
+            UpdateRequest?.Invoke();
+        }
     }
 
     /// <summary>
@@ -332,9 +331,9 @@ public class SVGAIITerminal
     /// </summary>
     private void TryDrawCursor()
     {
-        if (Cosmos.HAL.RTC.Second != lastSecond)
+        if (CursorVisible && Cosmos.HAL.RTC.Second != lastSecond)
         {
-            Contents.DrawFilledRectangle(Font.Size / 2 * CursorX, Font.Size * CursorY, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, cursorState ? ForegroundColor : BackgroundColor);
+            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, cursorState ? ForegroundColor : BackgroundColor);
             UpdateRequest?.Invoke();
 
             lastSecond = Cosmos.HAL.RTC.Second;
@@ -359,12 +358,12 @@ public class SVGAIITerminal
     /// <summary>
     /// Cursor X coordinate
     /// </summary>
-    public int CursorX = 0;
+    public int CursorLeft;
 
     /// <summary>
     /// Cursor Y coordinate
     /// </summary>
-    public int CursorY = 0;
+    public int CursorTop;
 
     /// <summary>
     /// Foreground console color
@@ -382,14 +381,9 @@ public class SVGAIITerminal
     public bool CursorVisible = true;
 
     /// <summary>
-    /// Console contents
+    /// Console canvas
     /// </summary>
-    public Canvas Contents;
-
-    /// <summary>
-    /// Optional full-screen console display
-    /// </summary>
-    public Display Screen;
+    public Canvas Canvas;
 
     /// <summary>
     /// Console font
@@ -400,6 +394,11 @@ public class SVGAIITerminal
     /// Update request action
     /// </summary>
     public Action UpdateRequest;
+    
+    /// <summary>
+    /// <see cref="SVGAIITerminal"/> version
+    /// </summary>
+    public const string Version = "v2.0.0";
 
     /// <summary>
     /// Last second
@@ -410,15 +409,6 @@ public class SVGAIITerminal
     /// Cursor state
     /// </summary>
     private bool cursorState = true;
-
-    #pragma warning disable CS8618
-
-    /// <summary>
-    /// Raw default font
-    /// </summary>
-    [ManifestResourceStream(ResourceName = "SVGAIITerminal.Fonts.IBM.btf")] static byte[] IBM_btf_raw;
-
-    #pragma warning restore CS8618
 
     #endregion
 }

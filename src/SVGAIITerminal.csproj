@@ -7,9 +7,6 @@
 	<ItemGroup>
 	  <None Remove="Font.btf" />
 	</ItemGroup>
-	<ItemGroup>
-	  <EmbeddedResource Include="Fonts\IBM.btf" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
