@@ -24,10 +24,10 @@ public class SVGAIITerminal
         Font = font;
         Width = width / (Font.Size / 2);
         Height = height / Font.Size;
-        Canvas = screen;
+        Contents = screen;
         UpdateRequest = () =>
         {
-            screen.DrawImage(0, 0, this.Canvas, false);
+            screen.DrawImage(0, 0, this.Contents, false);
             screen.Update();
         };
     }
@@ -44,10 +44,10 @@ public class SVGAIITerminal
         Font = font;
         Width = width / (font.Size / 2);
         Height = height / font.Size;
-        Canvas = screen;
+        Contents = screen;
         UpdateRequest = () =>
         {
-            screen.DrawImage(0, 0, this.Canvas, false);
+            screen.DrawImage(0, 0, this.Contents, false);
             screen.Update();
         };
     }
@@ -64,7 +64,7 @@ public class SVGAIITerminal
         Font = font;
         Width = width / (font.Size / 2);
         Height = height / font.Size;
-        Canvas = new Canvas((ushort)Width, (ushort)Height);
+        Contents = new Canvas((ushort)Width, (ushort)Height);
         UpdateRequest = updateRequest;
     }
 
@@ -79,11 +79,8 @@ public class SVGAIITerminal
     /// <param name="y">Y coordinate</param>
     public Color this[int x, int y]
     {
-        get => Canvas[x, y];
-        set
-        {
-            Canvas[x, y] = value;
-        }
+        get => Contents[x, y];
+        set => Contents[x, y] = value;
     }
     
     #endregion
@@ -95,7 +92,7 @@ public class SVGAIITerminal
     /// </summary>
     public void Clear()
     {
-        Canvas.Clear();
+        Contents.Clear();
         CursorLeft = 0;
         CursorTop = 0;
     }
@@ -133,8 +130,8 @@ public class SVGAIITerminal
                     break;
 
                 default:
-                    Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                    Canvas.DrawString(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, c.ToString(), Font, color);
+                    Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                    Contents.DrawString(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, c.ToString(), Font, color);
                     CursorLeft++;
                     break;
             }
@@ -177,9 +174,6 @@ public class SVGAIITerminal
         }
     }
 
-    // TODO: fix this shit
-    public string LastInput = string.Empty;
-
     /// <summary>
     /// Gets input from the user
     /// </summary>
@@ -195,74 +189,65 @@ public class SVGAIITerminal
         {
             TryDrawCursor();
 
-            if (KeyboardManager.TryReadKey(out var key))
+            if (!KeyboardManager.TryReadKey(out var key)) continue;
+            
+            switch (key.Key)
             {
-                switch (key.Key)
-                {
-                    case ConsoleKeyEx.Enter:
-                        Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                        CursorLeft = 0;
-                        CursorTop++;
-                        TryScroll();
-                        // TODO: add last input handler
-                        return input;
-
-                    case ConsoleKeyEx.Backspace:
-                        if (!(CursorLeft == startX && CursorTop == startY))
-                        {
-                            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-                            CursorTop -= CursorLeft == 0 ? 1 : 0;
-                            CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
-                            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
-
-                            input = input.Remove(input.Length - 1); // Remove the last character of the string
-                        }
-
-                        ForceDrawCursor();
-                        break;
-
-                    case ConsoleKeyEx.Tab:
-                        Write('\t');
-                        input += new string(' ', 4);
-                        
-                        ForceDrawCursor();
-                        break;
-
-                    case ConsoleKeyEx.UpArrow:
-                        SetCursorPosition(startX, startY);
-                        Write(new string(' ', input.Length));
-                        SetCursorPosition(startX, startY);
-                        Write(LastInput);
-                        input = LastInput;
-
-                        ForceDrawCursor();
-                        break;
+                case ConsoleKeyEx.Enter:
+                    Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                    TryScroll();
                     
-                    // TODO: DownArrow
-                    // TODO: LeftArrow
-                    // TODO: RightArrow
-                    // TODO: L
+                    CursorLeft = 0;
+                    CursorTop++;
+                    _lastInput = input;
+                    
+                    return input;
 
-                    default:
-                        if (KeyboardManager.ControlPressed)
-                        {
-                            if (key.Key == ConsoleKeyEx.L)
-                            {
-                                Clear();
-                                // TODO: add last input handler
-                                return string.Empty;
-                            }
-                        }
-                        else
-                        {
-                            Write(key.KeyChar.ToString());
-                            TryScroll();
-                            input += key.KeyChar;
-                        }
+                case ConsoleKeyEx.Backspace:
+                    if (!(CursorLeft == startX && CursorTop == startY))
+                    {
+                        Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
+                        CursorTop -= CursorLeft == 0 ? 1 : 0;
+                        CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
+                        Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, BackgroundColor);
 
-                        ForceDrawCursor();
-                        break;
-                }
+                        input = input.Remove(input.Length - 1); // Remove the last character of the string
+                    }
+
+                    ForceDrawCursor();
+                    break;
+
+                case ConsoleKeyEx.Tab:
+                    Write('\t');
+                    input += new string(' ', 4);
+                        
+                    ForceDrawCursor();
+                    break;
+
+                case ConsoleKeyEx.UpArrow:
+                    ForceDrawCursor(true);
+                    SetCursorPosition(startX, startY);
+                    Write(new string(' ', input.Length));
+                    SetCursorPosition(startX, startY);
+                    Write(_lastInput);
+                    input = _lastInput;
+
+                    ForceDrawCursor();
+                    break;
+
+                default:
+                    if (KeyboardManager.ControlPressed && key.Key == ConsoleKeyEx.L)
+                    {
+                        Clear();
+                        return string.Empty;
+                    }
+                        
+                    Write(key.KeyChar.ToString());
+                    TryScroll();
+                    input += key.KeyChar;
+
+                    ForceDrawCursor();
+                    break;
             }
         }
     }
@@ -307,8 +292,8 @@ public class SVGAIITerminal
 
         while (CursorTop >= Height)
         {
-            Canvas.DrawImage(0, -Font.Size, Canvas, false);
-            Canvas.DrawFilledRectangle(0, Canvas.Height - Font.Size, Canvas.Width, Font.Size, 0, BackgroundColor);
+            Contents.DrawImage(0, -Font.Size, Contents, false);
+            Contents.DrawFilledRectangle(0, Contents.Height - Font.Size, Contents.Width, Font.Size, 0, BackgroundColor);
             UpdateRequest?.Invoke();
             CursorTop--;
         }
@@ -317,11 +302,11 @@ public class SVGAIITerminal
     /// <summary>
     /// Force draw cursor
     /// </summary>
-    private void ForceDrawCursor()
+    private void ForceDrawCursor(bool unDraw = false)
     {
         if (CursorVisible)
         {
-            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, ForegroundColor);
+            Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, unDraw ? BackgroundColor : ForegroundColor);
             UpdateRequest?.Invoke();
         }
     }
@@ -331,13 +316,13 @@ public class SVGAIITerminal
     /// </summary>
     private void TryDrawCursor()
     {
-        if (CursorVisible && Cosmos.HAL.RTC.Second != lastSecond)
+        if (CursorVisible && Cosmos.HAL.RTC.Second != _lastSecond)
         {
-            Canvas.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, cursorState ? ForegroundColor : BackgroundColor);
+            Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, Convert.ToUInt16(Font.Size / 2), Font.Size, 0, _cursorState ? ForegroundColor : BackgroundColor);
             UpdateRequest?.Invoke();
 
-            lastSecond = Cosmos.HAL.RTC.Second;
-            cursorState = !cursorState;
+            _lastSecond = Cosmos.HAL.RTC.Second;
+            _cursorState = !_cursorState;
         }
     }
 
@@ -346,24 +331,24 @@ public class SVGAIITerminal
     #region Fields
 
     /// <summary>
-    /// Terminal width
+    /// Terminal width in characters
     /// </summary>
     public int Width;
 
     /// <summary>
-    /// Terminal height
+    /// Terminal height in characters
     /// </summary>
     public int Height;
 
     /// <summary>
     /// Cursor X coordinate
     /// </summary>
-    public int CursorLeft;
+    public int CursorLeft = 0;
 
     /// <summary>
     /// Cursor Y coordinate
     /// </summary>
-    public int CursorTop;
+    public int CursorTop = 0;
 
     /// <summary>
     /// Foreground console color
@@ -381,34 +366,34 @@ public class SVGAIITerminal
     public bool CursorVisible = true;
 
     /// <summary>
-    /// Console canvas
+    /// Console contents
     /// </summary>
-    public Canvas Canvas;
+    public Canvas Contents;
 
     /// <summary>
     /// Console font
     /// </summary>
     public Font Font;
-
+    
     /// <summary>
     /// Update request action
     /// </summary>
     public Action UpdateRequest;
     
     /// <summary>
-    /// <see cref="SVGAIITerminal"/> version
+    /// Last input
     /// </summary>
-    public const string Version = "v2.0.0";
+    private string _lastInput;
 
     /// <summary>
     /// Last second
     /// </summary>
-    private byte lastSecond = Cosmos.HAL.RTC.Second;
+    private byte _lastSecond = Cosmos.HAL.RTC.Second;
 
     /// <summary>
     /// Cursor state
     /// </summary>
-    private bool cursorState = true;
+    private bool _cursorState = true;
 
     #endregion
 }
