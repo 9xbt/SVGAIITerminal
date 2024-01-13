@@ -2,7 +2,7 @@ ekeleze Free Use License
 
 Version 1.0, 19-08-2023 (D-M-Y)
 
-```Copyright (c) 2023 Mobren```
+```Copyright (c) 2023-2024 Mobren```
 
 ```Original author(s): xrc2```
 
