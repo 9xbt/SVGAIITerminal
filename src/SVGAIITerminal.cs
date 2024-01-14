@@ -2,6 +2,7 @@
  * If a license wasn't included with the program,
  * refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md */
 
+using System;
 using Cosmos.System;
 using PrismAPI.Hardware.GPU;
 using PrismAPI.Graphics;
