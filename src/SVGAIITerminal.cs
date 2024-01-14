@@ -88,7 +88,7 @@ public sealed class SVGAIITerminal
     }
     
     #endregion
-
+    
     #region Methods
 
     /// <summary>
