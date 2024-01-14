@@ -1,11 +1,35 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<ImplicitUsings>enable</ImplicitUsings>
+		<Platform>cosmos</Platform>
+		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<PlatformTarget>x86</PlatformTarget>
+		<SignAssembly>False</SignAssembly>
+		<Title>SVGAIITerminal</Title>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageId>$(AssemblyName)</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>xrc2</Authors>
+		<Company />
+		<Description>A fast, instanceable &amp; high resolution terminal for Cosmos projects </Description>
+		<Copyright>Copyright © 2023-2024 xrc2</Copyright>
+		<RepositoryUrl>https://github.com/9xbt/SVGAIITerminal/</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>csharp, terminal-emulator, cosmos-os</PackageTags>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove="Font.btf" />
+	  <None Include="..\LICENSE.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 
 	<ItemGroup>

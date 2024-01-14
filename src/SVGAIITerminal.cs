@@ -7,7 +7,10 @@ using PrismAPI.Hardware.GPU;
 using PrismAPI.Graphics;
 using PrismAPI.Graphics.Fonts;
 
-public class SVGAIITerminal
+/// <summary>
+/// A fast, instanceable & high resolution terminal
+/// </summary>
+public sealed class SVGAIITerminal
 {
     #region Constructors
 
