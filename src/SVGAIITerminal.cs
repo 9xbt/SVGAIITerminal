@@ -387,7 +387,7 @@ public sealed class SVGAIITerminal
     /// <summary>
     /// Last input
     /// </summary>
-    private string _lastInput;
+    private string _lastInput = string.Empty;
 
     /// <summary>
     /// Last second
