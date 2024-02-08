@@ -1,2 +1,2 @@
 # SVGAIITerminal
-A fast, instanceable & high resolution terminal for Cosmos
+A fast, instanceable & high resolution C# terminal emulator
