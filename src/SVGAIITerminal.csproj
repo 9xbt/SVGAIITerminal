@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<Platform>cosmos</Platform>
@@ -11,7 +12,6 @@
 		<PackageId>$(AssemblyName)</PackageId>
 		<Version>1.0.0</Version>
 		<Authors>xrc2</Authors>
-		<Company />
 		<Description>A fast, instanceable &amp; high resolution terminal for Cosmos projects </Description>
 		<Copyright>Copyright © 2023-2024 xrc2</Copyright>
 		<RepositoryUrl>https://github.com/9xbt/SVGAIITerminal/</RepositoryUrl>
@@ -20,7 +20,9 @@
 		<PackageTags>csharp, terminal-emulator, cosmos-os</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
+	
 	<ItemGroup>
 	  <None Include="..\LICENSE.md">
 	    <Pack>True</Pack>
@@ -36,4 +38,5 @@
 		<PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
 		<PackageReference Include="PrismAPI" Version="1.0.3-*" />
 	</ItemGroup>
+	
 </Project>
