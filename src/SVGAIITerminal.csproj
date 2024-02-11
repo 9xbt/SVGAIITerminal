@@ -10,7 +10,7 @@
 		<Title>SVGAIITerminal</Title>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageId>$(AssemblyName)</PackageId>
-		<Version>1.0.0</Version>
+		<Version>2.0-pre1</Version>
 		<Authors>xrc2</Authors>
 		<Description>A fast, instanceable &amp; high resolution terminal for Cosmos projects </Description>
 		<Copyright>Copyright © 2023-2024 xrc2</Copyright>
