@@ -102,7 +102,7 @@ public sealed unsafe class SVGAIITerminal
     /// <param name="Height">Terminal height</param>
     /// <param name="Font">Terminal font</param>
     /// <param name="UpdateRequest">Update request action, user can manually manage where and how to render the terminal</param>
-    public SVGAIITerminal(int Width, int Height, Font Font, Action UpdateRequest)
+    public SVGAIITerminal(int Width, int Height, Font Font, Action? UpdateRequest)
     {
         // Null, out of range & out of memory checks
         if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
@@ -200,26 +200,26 @@ public sealed unsafe class SVGAIITerminal
         }
 
         // Print the string
-        foreach (char c in str.ToString())
+        foreach (char c in str.ToString()!)
         {
             switch (c)
             {
                 case '\r':
                     CursorLeft = 0;
                     break;
-                
+
                 case '\n':
                     CursorLeft = 0;
                     CursorTop++;
                     break;
-                
+
                 case '\t':
                     Write(_tab);
                     break;
 
                 default:
                     Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, (ushort)(Font.Size / 2), Font.Size, 0, backColor);
-                    
+
                     // Draw the character
                     if (c != ' ') for (int j = 0; j < Glyphs[c - 33].Points.Count; j++) Contents[(Font.Size / 2 * CursorLeft) +
                         Glyphs[c - 33].Points[j].X, (Font.Size * CursorTop) + Glyphs[c - 33].Points[j].Y] = foreColor;
@@ -238,7 +238,7 @@ public sealed unsafe class SVGAIITerminal
     /// Prints a string to the terminal with a new line character
     /// </summary>
     /// <param name="str">String to print</param>
-    public void WriteLine(object str = null) => Write(str + "\n");
+    public void WriteLine(object? str = null) => Write(str + "\n");
 
     /// <summary>
     /// Prints a colored string to the terminal with a new line character
@@ -300,8 +300,8 @@ public sealed unsafe class SVGAIITerminal
 
         int startX = CursorLeft, startY = CursorTop;
         var input = string.Empty;
-        
-        for (;;)
+
+        for (; ; )
         {
             TryDrawCursor();
 
@@ -310,17 +310,17 @@ public sealed unsafe class SVGAIITerminal
                 IdleRequest?.Invoke();
                 continue;
             }
-            
+
             switch (key.Key)
             {
                 case ConsoleKeyEx.Enter:
                     Contents.DrawFilledRectangle(Font.Size / 2 * CursorLeft, Font.Size * CursorTop, (ushort)(Font.Size / 2), Font.Size, 0, BackgroundColor);
                     TryScroll();
-                    
+
                     CursorLeft = 0;
                     CursorTop++;
                     _lastInput = input;
-                    
+
                     return input;
 
                 case ConsoleKeyEx.Backspace:
@@ -343,7 +343,7 @@ public sealed unsafe class SVGAIITerminal
                 case ConsoleKeyEx.Tab:
                     Write('\t');
                     input += _tab;
-                        
+
                     ForceDrawCursor();
                     break;
 
@@ -595,21 +595,21 @@ public sealed unsafe class SVGAIITerminal
     /// Console font
     /// </summary>
     public Font Font;
-    
+
     /// <summary>
     /// Update request action
     /// </summary>
-    public Action UpdateRequest;
+    public Action? UpdateRequest;
 
     /// <summary>
     /// Called in a loop when ReadLine or ReadKey are idling
     /// </summary>
-    public Action IdleRequest;
+    public Action? IdleRequest;
 
     /// <summary>
     /// Called when the terminal wants to scroll up but the buffer doesn't need to
     /// </summary>
-    public Action ScrollRequest;
+    public Action? ScrollRequest;
 
     /// <summary>
     /// Gets a value indicating whether a key press is available in the input stream

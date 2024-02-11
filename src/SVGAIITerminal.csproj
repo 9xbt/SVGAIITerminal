@@ -1,42 +1,34 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	
+<Project Sdk="Microsoft.NET.Sdk">
+
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
-		<Platform>cosmos</Platform>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<PlatformTarget>x86</PlatformTarget>
-		<SignAssembly>False</SignAssembly>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<Title>SVGAIITerminal</Title>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<PackageId>$(AssemblyName)</PackageId>
 		<Version>2.0-pre1</Version>
-		<Authors>xrc2</Authors>
-		<Description>A fast, instanceable &amp; high resolution terminal for Cosmos projects </Description>
-		<Copyright>Copyright © 2023-2024 xrc2</Copyright>
-		<RepositoryUrl>https://github.com/9xbt/SVGAIITerminal/</RepositoryUrl>
+		<Company>xrc2</Company>
+		<Description>A fast, instanceable &amp; high resolution C# terminal emulator for Cosmos operating systems</Description>
+		<Copyright>Copyright © 2023-2024 Mobren</Copyright>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/9xbt/SVGAIITerminal/</RepositoryUrl>
 		<PackageTags>csharp, terminal-emulator, cosmos-os</PackageTags>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
-	
+
 	<ItemGroup>
-	  <None Include="..\LICENSE.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
-	  <None Include="..\README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
+		<None Include="..\LICENSE.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+			<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
-		<PackageReference Include="PrismAPI" Version="1.0.3-*" />
+		<PackageReference Include="PrismAPI" Version="1.0.3" />
 	</ItemGroup>
-	
+
 </Project>
