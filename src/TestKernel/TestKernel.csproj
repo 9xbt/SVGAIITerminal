@@ -29,6 +29,7 @@
         <QemuUseSerial>False</QemuUseSerial>
         <QemuHWAccel>False</QemuHWAccel>
         <QemuHWAccelWHPX>False</QemuHWAccelWHPX>
+        <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
     </PropertyGroup>
 
     <ItemGroup>
@@ -41,6 +42,8 @@
       <EmbeddedResource Include="Resources\DefaultFont.btf" />
       <EmbeddedResource Include="Resources\Mouse.bmp" />
       <EmbeddedResource Include="Resources\Plex.acf" />
+      <None Remove="Resources\lipsum.txt" />
+      <EmbeddedResource Include="Resources\lipsum.txt" />
     </ItemGroup>
 
     <ItemGroup>
@@ -51,7 +54,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\SVGAIITerminal\src\SVGAIITerminal.csproj" />
+      <ProjectReference Include="..\SVGAIITerminal.csproj" />
     </ItemGroup>
 
 </Project>

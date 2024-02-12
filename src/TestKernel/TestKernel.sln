@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34525.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestKernel", "TestKernel.csproj", "{A255FA14-BA63-475B-B0F0-7E5D32791E45}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SVGAIITerminal", "..\SVGAIITerminal\src\SVGAIITerminal.csproj", "{C59253F6-BF7B-4B7D-99DB-8D34A85E4C8E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SVGAIITerminal", "..\SVGAIITerminal.csproj", "{D4194A15-9C8D-447E-B360-05CB82C70EBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{A255FA14-BA63-475B-B0F0-7E5D32791E45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A255FA14-BA63-475B-B0F0-7E5D32791E45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A255FA14-BA63-475B-B0F0-7E5D32791E45}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C59253F6-BF7B-4B7D-99DB-8D34A85E4C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C59253F6-BF7B-4B7D-99DB-8D34A85E4C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C59253F6-BF7B-4B7D-99DB-8D34A85E4C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C59253F6-BF7B-4B7D-99DB-8D34A85E4C8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4194A15-9C8D-447E-B360-05CB82C70EBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4194A15-9C8D-447E-B360-05CB82C70EBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4194A15-9C8D-447E-B360-05CB82C70EBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4194A15-9C8D-447E-B360-05CB82C70EBA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

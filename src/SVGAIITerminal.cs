@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using Cosmos.System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using Cosmos.Core;
 using Mirage.TextKit;
 
@@ -143,13 +144,14 @@ public sealed unsafe class SVGAIITerminal
         if ((GCImplementation.GetAvailableRAM() - (GCImplementation.GetUsedRAM() / 1e6)) < (Width * Height * 4 / 1e6) + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
-        FontWidth = (ushort)GetWidestCharacterWidth();
-        FontHeight = (ushort)Font.GetHeight();
+        Beep();
         this.Width = Width / FontWidth;
         this.Height = Height / FontHeight;
         this.UpdateRequest = UpdateRequest;
-        AcfFont = Font;
         UseAcfFont = true;
+        AcfFont = Font;
+        FontWidth = (ushort)GetWidestCharacterWidth();
+        FontHeight = (ushort)Font.GetHeight();
         ParentHeight = Height;
         Contents = new Canvas((ushort)Width, (ushort)Height);
     }
@@ -265,13 +267,19 @@ public sealed unsafe class SVGAIITerminal
                         else
                         {
                             var glyph = AcfFont!.GetGlyph(c)!;
+                            var target = Contents;
+                            var x = FontWidth * CursorLeft + glyph.Left;
+                            var y = FontHeight * CursorTop + FontHeight - glyph.Top;
+                            var color = foreColor;
+
+                            // TODO: fix font rendering
                             
-                            // Draw the ACF character
-                            for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) Contents[(FontWidth * CursorLeft) + xx, (FontWidth * CursorTop) + yy] = new Color(((uint)255 << 24) |
-                                ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) *
-                                ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8) << 16) | ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((foreColor.ARGB >> 8) & 0xFF) +
-                                (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8) << 8) | (uint)((glyph.Bitmap[(yy *
-                                glyph.Width) + xx] * ((foreColor.ARGB) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * (Contents[xx, yy].ARGB & 0xFF)) >> 8));
+                            // Draw the character
+                            for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) target[x + xx, y + yy] = new Color(((uint)255 << 24) |
+                                ((uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) *
+                                ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8) << 16) | ((uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) +
+                                (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8) << 8) | (uint)((glyph.Bitmap[yy *
+                                glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (target[xx, yy].ARGB & 0xFF)) >> 8));
                         }
                     }
 
@@ -452,7 +460,11 @@ public sealed unsafe class SVGAIITerminal
     /// </summary>
     /// <param name="freq">Sound frequency</param>
     /// <param name="duration">Sound duration</param>
-    public void Beep(uint freq = 800, uint duration = 125) => PCSpeaker.Beep(freq, duration);
+    public void Beep(uint freq = 800, uint duration = 125)
+    {
+        PCSpeaker.Beep(freq, duration);
+        System.Threading.Thread.Sleep(200);
+    }
 
     /// <summary>
     /// Sets the foreground and background colors to their defaults

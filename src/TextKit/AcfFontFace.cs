@@ -170,7 +170,7 @@ namespace Mirage.TextKit
                 _stream.Read(bitmap, 0, width * height);
             }
 
-            Glyph glyph = new Glyph(left, top, advanceX, width, height, bitmap);
+            Glyph glyph = new Glyph(left, top, width, height, bitmap);
             return glyph;
         }
 

@@ -1,7 +1,6 @@
 /*
  *  This file is part of the Mirage Desktop Environment.
  *  github.com/mirage-desktop/Mirage
- *  Modified by xrc2
  */
 namespace Mirage.TextKit
 {
@@ -19,12 +18,23 @@ namespace Mirage.TextKit
         /// <param name="width">The width of the glyph's bitmap in pixels.</param>
         /// <param name="height">The height of the glyph's bitmap in pixels.</param>
         /// <param name="bitmap">The buffer of the glyph's bitmap, as an array of alpha values.</param>
-        public Glyph(int left, int top, int advanceX, int width, int height, byte[] bitmap)
+        public Glyph(int left, int top, int width, int height, byte[] bitmap)
         {
+            Left = left;
+            Top = top;
             Width = width;
             Height = height;
             Bitmap = bitmap;
         }
+
+        /// <summary>
+        /// The horizontal offset of the glyph's bitmap.
+        /// </summary>
+        public readonly int Left;
+        /// <summary>
+        /// The vertical offset of the glyph's bitmap. Should be subtracted from the baseline.
+        /// </summary>
+        public readonly int Top;
 
         /// <summary>
         /// The width of the glyph's bitmap in pixels.
