@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <Platform>cosmos</Platform>
+        <SupportsX86Intrinsics>false</SupportsX86Intrinsics>
+        <SelfContained>True</SelfContained>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <EnableGDB>False</EnableGDB>
+        <StartCosmosGDB>False</StartCosmosGDB>
+        <VisualStudioDebugPort>Pipe: Cosmos\Serial</VisualStudioDebugPort>
+        <CosmosDebugPort>Serial: COM1</CosmosDebugPort>
+        <Launch>VMware</Launch>
+        <Profile>VMware</Profile>
+        <Description>Use VMware Player or Workstation to deploy and debug.</Description>
+        <PxeInterface>192.168.0.8</PxeInterface>
+        <OptimizationLevel>2</OptimizationLevel>
+        <CompressionType>Gzip</CompressionType>
+        <DebugEnabled>False</DebugEnabled>
+        <VMWareEdition>Workstation</VMWareEdition>
+        <Nullable>disable</Nullable>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <QemuMemory>512</QemuMemory>
+        <QemuNetworkDevice>RTL8139</QemuNetworkDevice>
+        <QemuVideoDriver>VMWare</QemuVideoDriver>
+        <QemuAudioDriver>SoundBlaster16</QemuAudioDriver>
+        <QemuUseSerial>False</QemuUseSerial>
+        <QemuHWAccel>False</QemuHWAccel>
+        <QemuHWAccelWHPX>False</QemuHWAccelWHPX>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Font.btf" />
+      <None Remove="Mouse.bmp" />
+      <None Remove="Resources\Plex.acf" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\DefaultFont.btf" />
+      <EmbeddedResource Include="Resources\Mouse.bmp" />
+      <EmbeddedResource Include="Resources\Plex.acf" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Cosmos.Build" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.Debug.Kernel" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.Plugs" Version="0-*" NoWarn="NU1604" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SVGAIITerminal\src\SVGAIITerminal.csproj" />
+    </ItemGroup>
+
+</Project>
