@@ -1,15 +1,17 @@
-﻿/* This code is licensed under the ekzFreeUse license
- * If a license wasn't included with the program,
- * refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md */
-
+﻿/*
+ *  This code is licensed under the ekzFreeUse license
+ *  If a license wasn't included with the program,
+ *  refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md
+ */
 using System;
 using System.Runtime.InteropServices;
 using Cosmos.System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using Cosmos.Core;
+using Cosmos.HAL;
 using Mirage.TextKit;
-
+using Glyph = Mirage.TextKit.Glyph;
+using PCSpeaker = Cosmos.System.PCSpeaker;
 #if USE_GRAPEGL
 using GrapeGL.Hardware.GPU;
 using GrapeGL.Graphics;
@@ -48,7 +50,7 @@ public sealed unsafe class SVGAIITerminal
         // Null, out of range & out of memory checks
         if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
         if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
-        if ((GCImplementation.GetAvailableRAM() - (GCImplementation.GetUsedRAM() / 1e6)) < (Width * Height * 4 / 1e6) + 1) throw new OutOfMemoryException();
+        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
         this.Font = Font;
@@ -81,7 +83,7 @@ public sealed unsafe class SVGAIITerminal
         if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
         if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
         if (Screen == null) throw new ArgumentNullException(nameof(Screen));
-        if ((GCImplementation.GetAvailableRAM() - (GCImplementation.GetUsedRAM() / 1e6)) < (Width * Height * 4 / 1e6) + 1) throw new OutOfMemoryException();
+        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
         this.Font = Font;
@@ -113,7 +115,7 @@ public sealed unsafe class SVGAIITerminal
         // Null, out of range & out of memory checks
         if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
         if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
-        if ((GCImplementation.GetAvailableRAM() - (GCImplementation.GetUsedRAM() / 1e6)) < (Width * Height * 4 / 1e6) + 1) throw new OutOfMemoryException();
+        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
         FontWidth = (ushort)(Font.Size / 2);
@@ -144,14 +146,13 @@ public sealed unsafe class SVGAIITerminal
         if ((GCImplementation.GetAvailableRAM() - (GCImplementation.GetUsedRAM() / 1e6)) < (Width * Height * 4 / 1e6) + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
-        Beep();
+        AcfFont = Font;
+        FontWidth = (ushort)GetWidestCharacterWidth();
+        FontHeight = (ushort)Font.GetHeight();
         this.Width = Width / FontWidth;
         this.Height = Height / FontHeight;
         this.UpdateRequest = UpdateRequest;
         UseAcfFont = true;
-        AcfFont = Font;
-        FontWidth = (ushort)GetWidestCharacterWidth();
-        FontHeight = (ushort)Font.GetHeight();
         ParentHeight = Height;
         Contents = new Canvas((ushort)Width, (ushort)Height);
     }
@@ -186,7 +187,13 @@ public sealed unsafe class SVGAIITerminal
         Contents.Clear();
         CursorLeft = 0;
         CursorTop = 0;
+        
+        //Write("A", BackgroundColor);
+        // TODO: this doesn't work for some reason, try to fix
+        //CursorLeft--;
     }
+    
+    // TODO: change the order of these
 
     /// <summary>
     /// Prints a string to the terminal
@@ -253,10 +260,11 @@ public sealed unsafe class SVGAIITerminal
                     break;
 
                 default:
-                    Contents.DrawFilledRectangle(FontWidth * CursorLeft, FontHeight * CursorTop, FontWidth, FontHeight, 0, backColor);
+                    Contents.DrawFilledRectangle(FontWidth * CursorLeft, (FontHeight * CursorTop) + FontOffset, FontWidth, FontHeight, 0, backColor);
 
+                    // TODO: remove unused code and uncomment out required code
                     // Check if it's necessary to draw the character
-                    if (c != ' ')
+                    /*if (c != ' ')
                     {
                         if (!UseAcfFont)
                         {
@@ -266,22 +274,47 @@ public sealed unsafe class SVGAIITerminal
                         }
                         else
                         {
+                            // TODO: fix font rendering
+                            // TODO: └─> fix alpha masking
+                            
                             var glyph = AcfFont!.GetGlyph(c)!;
-                            var target = Contents;
                             var x = FontWidth * CursorLeft + glyph.Left;
                             var y = FontHeight * CursorTop + FontHeight - glyph.Top;
-                            var color = foreColor;
-
-                            // TODO: fix font rendering
                             
                             // Draw the character
-                            for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) target[x + xx, y + yy] = new Color(((uint)255 << 24) |
-                                ((uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) *
-                                ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8) << 16) | ((uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) +
-                                (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8) << 8) | (uint)((glyph.Bitmap[yy *
-                                glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (target[xx, yy].ARGB & 0xFF)) >> 8));
+                            for (int yy = 0; yy < glyph.Height; yy++)
+                            {
+                                for (int xx = 0; xx < glyph.Width; xx++)
+                                {
+                                    Contents[x + xx, y + yy] = new Color(255,
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8);
+                                }
+                            }
                         }
-                    }
+                    }*/
+                    
+                    // TODO: fix font rendering
+                    // TODO: └─> fix alpha masking
+                            
+                    /*var glyph = AcfFont!.GetGlyph(c)!;
+                    var x = FontWidth * CursorLeft + glyph.Left;
+                    var y = FontHeight * CursorTop + FontHeight - glyph.Top;
+                            
+                    // Draw the character
+                    for (int yy = 0; yy < glyph.Height; yy++)
+                    {
+                        for (int xx = 0; xx < glyph.Width; xx++)
+                        {
+                            Contents[x + xx, y + yy] = new Color(255,
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8);
+                        }
+                    }*/
+                    
+                    DrawGlyph(AcfFont!.GetGlyph(c)!, foreColor);
 
                     CursorLeft++;
                     break;
@@ -293,10 +326,19 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
+    /// Prints a new line character
+    /// </summary>
+    public void WriteLine()
+    {
+        CursorLeft = 0;
+        CursorTop++;
+    }
+
+    /// <summary>
     /// Prints a string to the terminal with a new line character
     /// </summary>
     /// <param name="str">String to print</param>
-    public void WriteLine(object? str = null) => Write(str + "\n");
+    public void WriteLine(object str) => Write(str + "\n");
 
     /// <summary>
     /// Prints a colored string to the terminal with a new line character
@@ -359,7 +401,7 @@ public sealed unsafe class SVGAIITerminal
         int startX = CursorLeft, startY = CursorTop;
         var input = string.Empty;
 
-        for (; ; )
+        for (;;)
         {
             TryDrawCursor();
 
@@ -372,13 +414,14 @@ public sealed unsafe class SVGAIITerminal
             switch (key.Key)
             {
                 case ConsoleKeyEx.Enter:
-                    Contents.DrawFilledRectangle(FontWidth * CursorLeft, FontHeight * CursorTop, (ushort)(FontWidth), FontHeight, 0, BackgroundColor);
+                    // TODO: change over to ForceDrawCursor(true)
+                    Contents.DrawFilledRectangle(FontWidth * CursorLeft, (FontHeight * CursorTop) + FontOffset, FontWidth, FontHeight, 0, BackgroundColor);
+                    
                     TryScroll();
 
                     CursorLeft = 0;
                     CursorTop++;
                     _lastInput = input;
-
                     return input;
 
                 case ConsoleKeyEx.Backspace:
@@ -386,10 +429,10 @@ public sealed unsafe class SVGAIITerminal
                     {
                         for (int i = 0; i < (input[^1] == '\t' ? 4 : 1); i++)
                         {
-                            Contents.DrawFilledRectangle(FontWidth * CursorLeft, FontHeight * CursorTop, (ushort)(FontWidth), FontHeight, 0, BackgroundColor);
+                            Contents.DrawFilledRectangle(FontWidth * CursorLeft, (FontHeight * CursorTop) + FontOffset, FontWidth, FontHeight, 0, BackgroundColor);
                             CursorTop -= CursorLeft == 0 ? 1 : 0;
                             CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
-                            Contents.DrawFilledRectangle(FontWidth * CursorLeft, FontHeight * CursorTop, (ushort)(FontWidth), FontHeight, 0, BackgroundColor);
+                            Contents.DrawFilledRectangle(FontWidth * CursorLeft, (FontHeight * CursorTop) + FontOffset, FontWidth, FontHeight, 0, BackgroundColor);
                         }
 
                         input = input.Remove(input.Length - (input[^1] == '\t' ? 4 : 1));
@@ -488,8 +531,8 @@ public sealed unsafe class SVGAIITerminal
 
         if (CursorTop >= Height)
         {
-            Contents.DrawImage(0, (Height - CursorTop - 1) * FontHeight, Contents, false);
-            Contents.DrawFilledRectangle(0, Contents.Height - (CursorTop - Height + 1) * FontHeight, Contents.Width, (ushort)((CursorTop - Height + 1) * FontHeight), 0, BackgroundColor);
+            Contents.DrawImage(0, ((Height - CursorTop - 1) * FontHeight) + FontOffset, Contents, false);
+            Contents.DrawFilledRectangle(0, (Contents.Height - (CursorTop - Height + 1) * FontHeight) + FontOffset, Contents.Width, (ushort)((CursorTop - Height + 1) * FontHeight), 0, BackgroundColor);
             CursorTop = Height - 1;
         }
 
@@ -502,14 +545,14 @@ public sealed unsafe class SVGAIITerminal
     /// <summary>
     /// Forcefully draws the cursor
     /// </summary>
-    private void ForceDrawCursor(bool undraw = false)
+    private void ForceDrawCursor(bool invert = false)
     {
         if (!CursorVisible) return;
 
         Contents.DrawFilledRectangle(FontWidth * CursorLeft,
-            CursorShape == CursorShape.Underline ? (FontHeight * (CursorTop + 1) - 2) :
-            FontHeight * CursorTop, (ushort)(CursorShape == CursorShape.Carret ? 2 : FontWidth),
-            CursorShape == CursorShape.Underline ? (ushort)2 : FontHeight, 0, undraw ? BackgroundColor : ForegroundColor);
+            (CursorShape == CursorShape.Underline ? (FontHeight * (CursorTop + 1) - 2) : FontHeight * CursorTop) + FontOffset,
+            (ushort)(CursorShape == CursorShape.Carret ? 2 : FontWidth),
+            CursorShape == CursorShape.Underline ? (ushort)2 : FontHeight, 0, invert ? BackgroundColor : ForegroundColor);
 
         UpdateRequest?.Invoke();
     }
@@ -520,7 +563,7 @@ public sealed unsafe class SVGAIITerminal
     private void TryDrawCursor()
     {
         // Note: do not invert, else the cursor will go brrr
-        if (CursorVisible && Cosmos.HAL.RTC.Second != _lastSecond)
+        if (CursorVisible && RTC.Second != _lastSecond)
         {
             ForceDrawCursor(!_cursorState);
 
@@ -585,6 +628,29 @@ public sealed unsafe class SVGAIITerminal
         return width;
     }
 
+    /// <summary>
+    /// Draws an ACF glyph
+    /// </summary>
+    /// <param name="glyph">The glyph to draw</param>
+    /// <param name="color">The color to draw the glyph with</param>
+    private void DrawGlyph(Glyph glyph, Color color)
+    {
+        var x = FontWidth * CursorLeft + glyph.Left;
+        var y = FontHeight * CursorTop + FontHeight - glyph.Top;
+                            
+        // Draw the character
+        for (int yy = 0; yy < glyph.Height; yy++)
+        {
+            for (int xx = 0; xx < glyph.Width; xx++)
+            {
+                Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
+                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
+                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
+                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
+            }
+        }
+    }
+
     #endregion
 
     #region Fields
@@ -613,7 +679,7 @@ public sealed unsafe class SVGAIITerminal
     };
 
     /// <summary>
-    /// The parent canvas's height of the terminal. Used for handling scrolling
+    /// The parent canvas's height. Used for handling scrolling
     /// </summary>
     public int ParentHeight;
 
@@ -696,6 +762,11 @@ public sealed unsafe class SVGAIITerminal
     public ushort FontHeight;
 
     /// <summary>
+    /// Vertical font offset
+    /// </summary>
+    public int FontOffset;
+
+    /// <summary>
     /// Update request action
     /// </summary>
     public Action? UpdateRequest;
@@ -733,7 +804,7 @@ public sealed unsafe class SVGAIITerminal
     /// <summary>
     /// Last second
     /// </summary>
-    private static byte _lastSecond = Cosmos.HAL.RTC.Second;
+    private static byte _lastSecond = RTC.Second;
 
     /// <summary>
     /// Cursor state

@@ -9,7 +9,6 @@ using PrismAPI.Hardware.GPU;
 using PrismAPI.Graphics;
 using PrismAPI.Graphics.Fonts;
 using Mirage.TextKit;
-using Glyph = PrismAPI.Graphics.Fonts.Glyph;
 
 namespace TestKernel
 {
@@ -27,8 +26,8 @@ namespace TestKernel
         private static readonly Canvas Mouse = Image.FromBitmap(_rawMouseBmp, false);
         private static readonly string Lipsum = Encoding.ASCII.GetString(_rawLipsum);
 
-        private SVGAIITerminal Console = null;
-        private Display Screen = null;
+        private SVGAIITerminal Console;
+        private Display Screen;
 
         protected override void BeforeRun()
         {
@@ -40,29 +39,41 @@ namespace TestKernel
 
             try
             {
-
                 Screen = Display.GetDisplay(1024, 768);
                 Screen.DefineCursor(Mouse);
 
-                var glyph = Plex!.GetGlyph('j')!;
-                var target = Screen;
-                var x = 10;
-                var y = 10;
-                var color = Color.ClassicBlue;
-
                 // Draw the character
-                for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) target[x + xx, y + yy] = new Color(((uint)255 << 24) |
+                /*for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) target[x + xx, y + yy] = new Color(((uint)255 << 24) |
                     ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) *
                     ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8) << 16) | ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((color.ARGB >> 8) & 0xFF) +
                     (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8) << 8) | (uint)((glyph.Bitmap[(yy *
-                    glyph.Width) + xx] * ((color.ARGB) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * (target[xx, yy].ARGB & 0xFF)) >> 8));
+                    glyph.Width) + xx] * ((color.ARGB) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * (target[xx, yy].ARGB & 0xFF)) >> 8));*/
 
-                for (int yy = 0; yy < glyph.Height; yy++)
+                const string text = "Hello, world![]yjgpq";
+                var temp = Plex!.GetGlyph(text[0])!;
+                Screen.DrawString(10, 40, "Horizontal alignment of glyph '" + text[0] + "': " + temp.Left, DefaultFont, Color.White);
+                Screen.DrawString(10, 60, "Vertical alignment of glyph '" + text[0] + "': " + temp.Top, DefaultFont, Color.White);
+                Screen.DrawString(10, 80, "Resulting Y of glyph '" + text[0] + "': " + (Plex!.GetHeight() - temp.Top), DefaultFont, Color.White);
+                
+                for (int i = 0; i < text.Length; i++)
                 {
-                    for (int xx = 0; xx < glyph.Width; xx++)
+                    var glyph = Plex!.GetGlyph(text[i])!;
+                    var target = Screen;
+                    var x = 0 + (i * 10) + glyph.Left;
+                    var y = 7 + Plex!.GetHeight() - glyph.Top;
+                    var color = Color.White;
+                    
+                    for (int yy = 0; yy < glyph.Height; yy++)
                     {
-                        int c = glyph.Bitmap[yy * glyph.Width + xx];
-                        Screen.DrawString(xx * 8 + 10, yy * 16 + 50, "x", DefaultFont, new Color(c, c, c));
+                        for (int xx = 0; xx < glyph.Width; xx++)
+                        {
+                            target[x + xx, y + yy] = new Color(255,
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
+                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (target[xx, yy].ARGB & 0xFF))) >> 8);
+                            
+                            //Screen.DrawString(xx * 8 + 10, yy * 16 + 100, "x", DefaultFont, new Color(glyph.Bitmap[yy * glyph.Width + xx], glyph.Bitmap[yy * glyph.Width + xx], glyph.Bitmap[yy * glyph.Width + xx]));
+                        }
                     }
                 }
 
@@ -73,10 +84,17 @@ namespace TestKernel
                 Console = new SVGAIITerminal(Screen.Width, ushort.MaxValue, Plex, Update)
                 {
                     IdleRequest = Idle,
-                    ScrollRequest = Scroll
+                    ScrollRequest = Scroll,
+                    FontOffset = 7
                 };
                 Console.ParentHeight = Screen.Height / Console.FontHeight;
 
+                Console.Clear();
+                Console.Beep();
+                
+                Console.WriteLine("Hello, world!\n");
+                
+                InfoLog("Glyph width: " + Console.FontWidth);
                 SuccessLog("Display driver initialized");
                 SuccessLog("SVGAIITerminal initialized");
 
@@ -87,7 +105,7 @@ namespace TestKernel
 
                 Console.WriteLine("+------------------------------+\n" +
                                   "|  SVGAIITerminal Test Kernel  |\n" +
-                                  "|        Version 2.4.6         |\n" +
+                                  "|        Version 2.5.1         |\n" +
                                   "| Copyright (c) 2023-2024 xrc2 |\n" +
                                   "+------------------------------+\n");
 
@@ -108,7 +126,7 @@ namespace TestKernel
                 System.Console.ForegroundColor = ConsoleColor.White;
                 System.Console.WriteLine("Unhandled exception at bootstrap: " + ex.Message);
 
-                while (true);
+                while (true) { }
             }
         }
 
@@ -122,11 +140,11 @@ namespace TestKernel
                 switch (input.Trim().ToLower())
                 {
                     case { } a when a == "help" || a == "?":
-                        Console.WriteLine("Available commands: help/?, about, res, mem, fps, cursor, lipsum, echo, reboot, shutdown", ConsoleColor.Gray);
+                        Console.WriteLine("Available commands: help/?, about, res, mem, fps, cursor, lipsum, gc, echo, reboot, shutdown", ConsoleColor.Gray);
                         break;
 
                     case "about":
-                        Console.WriteLine("SVGAIITerminal TestKernel shell v1.4.1\n" +
+                        Console.WriteLine("SVGAIITerminal TestKernel shell v1.5\n" +
                                           "Copyright (c) 2024 xrc2", ConsoleColor.Gray);
                         break;
 
@@ -156,6 +174,10 @@ namespace TestKernel
 
                     case "lipsum":
                         Console.WriteLine(Lipsum, ConsoleColor.Gray);
+                        break;
+                    
+                    case "gc":
+                        Heap.Collect();
                         break;
 
                     case { } a when a.StartsWith("echo "):
@@ -187,14 +209,14 @@ namespace TestKernel
                 {
                     Console.WriteLine();
                     ErrorLog("Out of memory!");
-                    while (true);
+                    while (true) { }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine();
                 ErrorLog("Unhandled exception at runtime: " + ex.ToString());
-                while (true);
+                while (true) { }
             }
         }
 
@@ -202,7 +224,7 @@ namespace TestKernel
 
         private void Update()
         {
-            Screen.DrawImage(0, _termY, Console.Contents, false);
+            Screen.DrawImage(0, _termY - Console.FontOffset, Console.Contents, false);
             Screen.Update();
 
             Heap.Collect();
@@ -229,6 +251,12 @@ namespace TestKernel
 
         private void Scroll()
             => _termY = Screen.Height - ((Console.CursorTop + 1) * Console.FontHeight);
+
+        private void InfoLog(string msg)
+        {
+            Console.Write("[INFO] ", ConsoleColor.Blue);
+            Console.WriteLine(msg);
+        }
 
         private void SuccessLog(string msg)
         {

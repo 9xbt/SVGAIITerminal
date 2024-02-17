@@ -1,23 +1,23 @@
-/*
+﻿/*
  *  This file is part of the Mirage Desktop Environment.
  *  github.com/mirage-desktop/Mirage
  */
-using System.IO;
+/*using System.IO;
 using System;
 using System.Text;
 
 namespace Mirage.TextKit
 {
     /// <summary>
-    /// An ACF (Advanced Cosmos Font Format) font face.
+    /// A BTF (BitFont Format) font face.
     /// </summary>
-    public class AcfFontFace : FontFace
+    public class BtfFontFace : FontFace
     {
         /// <summary>
         /// Initialise a new ACF (Advanced Cosmos Font Format) font face.
         /// </summary>
         /// <param name="stream">The data of the .acf font file.</param>
-        public AcfFontFace(Stream stream)
+        public BtfFontFace(Stream stream)
         {
             _stream = stream;
 
@@ -222,6 +222,6 @@ namespace Mirage.TextKit
         /// <summary>
         /// The glyphs of the font face in ASCII.
         /// </summary>
-        public readonly Glyph[] _glyphs = new Glyph[256];
+        private readonly Glyph[] _glyphs = new Glyph[256];
     }
-}
+}*/
