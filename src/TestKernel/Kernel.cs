@@ -19,8 +19,8 @@ namespace TestKernel
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.Mouse.bmp")] private static readonly byte[] _rawMouseBmp;
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.lipsum.txt")] private static readonly byte[] _rawLipsum;
 
-        private static readonly Font DefaultFont = new Font(_rawDefaultFontBtf, 16);
-        private static readonly AcfFontFace Plex = new AcfFontFace(new MemoryStream(_rawPlexAcf));
+        private static FontFace DefaultFont; // TODO: this might crash it; yep indeed
+        private static readonly FontFace Plex = new AcfFontFace(new MemoryStream(_rawPlexAcf));
         private static readonly Canvas Mouse = Image.FromBitmap(_rawMouseBmp, false);
         private static readonly string Lipsum = Encoding.ASCII.GetString(_rawLipsum);
 
@@ -44,16 +44,15 @@ namespace TestKernel
                 {
                     IdleRequest = Idle,
                     ScrollRequest = Scroll,
-                    FontOffset = 11
+                    FontOffset = 11,
+                    ParentHeight = Screen.Height / Plex.GetHeight()
                 };
-                Console.ParentHeight = Screen.Height / Console.FontHeight;
 
                 Console.Clear();
                 Console.Beep();
                 
                 Console.WriteLine("Hello, world!\n");
                 
-                InfoLog("Glyph width: " + Console.FontWidth);
                 SuccessLog("Display driver initialized");
                 SuccessLog("SVGAIITerminal initialized");
 
@@ -76,6 +75,9 @@ namespace TestKernel
 
                 Console.ResetColor();
                 Console.WriteLine("\n");
+
+                // TODO: fix this
+                //DefaultFont = new BtfFontFace(_rawDefaultFontBtf, 16);
             }
             catch (Exception ex)
             {
@@ -174,7 +176,7 @@ namespace TestKernel
             catch (Exception ex)
             {
                 Console.WriteLine();
-                ErrorLog("Unhandled exception at runtime: " + ex.ToString());
+                ErrorLog("Unhandled exception at runtime: " + ex);
                 while (true) { }
             }
         }
@@ -195,10 +197,10 @@ namespace TestKernel
 
             if (Sys.MouseManager.ScrollDelta != 0)
             {
-                _termY -= Sys.MouseManager.ScrollDelta * Console.FontHeight * 3;
+                _termY -= Sys.MouseManager.ScrollDelta * Console.Font.GetHeight() * 3;
 
                 if (_termY > 0) _termY = 0;
-                else if (_termY < -(Console.CursorTop * Console.FontHeight)) _termY = -(Console.CursorTop * Console.FontHeight);
+                else if (_termY < -(Console.CursorTop * Console.Font.GetHeight())) _termY = -(Console.CursorTop * Console.Font.GetHeight());
                 else if (_termY < -(Console.Contents.Height - Screen.Height)) _termY = -(Console.Contents.Height - Screen.Height);
 
                 Screen.Clear(Console.BackgroundColor);
@@ -209,7 +211,7 @@ namespace TestKernel
         }
 
         private void Scroll()
-            => _termY = Screen.Height - ((Console.CursorTop + 1) * Console.FontHeight);
+            => _termY = Screen.Height - ((Console.CursorTop + 1) * Console.Font.GetHeight());
 
         private void InfoLog(string msg)
         {
