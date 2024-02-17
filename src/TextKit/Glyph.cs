@@ -2,6 +2,8 @@
  *  This file is part of the Mirage Desktop Environment.
  *  github.com/mirage-desktop/Mirage
  */
+using System.Collections.Generic;
+
 namespace Mirage.TextKit
 {
     /// <summary>
@@ -56,5 +58,11 @@ namespace Mirage.TextKit
         /// The buffer of the glyph's bitmap, as an array of alpha values.
         /// </summary>
         public readonly byte[] Bitmap;
+        
+        // TODO: finish implementing this
+        /// <summary>
+        /// The buffer of the glyph's bitmap, as an list of points.
+        /// </summary>
+        public List<(int X, int Y)> Points;
     }
 }
