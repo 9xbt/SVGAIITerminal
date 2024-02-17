@@ -2,7 +2,7 @@
  *  This file is part of the Mirage Desktop Environment.
  *  github.com/mirage-desktop/Mirage
  */
-/*using System.IO;
+using System.IO;
 using System;
 using System.Text;
 
@@ -224,4 +224,4 @@ namespace Mirage.TextKit
         /// </summary>
         private readonly Glyph[] _glyphs = new Glyph[256];
     }
-}*/
+}

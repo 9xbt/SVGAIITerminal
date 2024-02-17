@@ -14,8 +14,6 @@ namespace TestKernel
 {
     public class Kernel : Sys.Kernel
     {
-        // TODO: finish implementing ACF in Kernel.cs and in SVGAIITerminal.cs
-        
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.DefaultFont.btf")] private static readonly byte[] _rawDefaultFontBtf;
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.Plex.acf")] private static readonly byte[] _rawPlexAcf;
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.Mouse.bmp")] private static readonly byte[] _rawMouseBmp;
@@ -42,50 +40,11 @@ namespace TestKernel
                 Screen = Display.GetDisplay(1024, 768);
                 Screen.DefineCursor(Mouse);
 
-                // Draw the character
-                /*for (int yy = 0; yy < glyph.Height; yy++) for (int xx = 0; xx < glyph.Width; xx++) target[x + xx, y + yy] = new Color(((uint)255 << 24) |
-                    ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) *
-                    ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8) << 16) | ((uint)((glyph.Bitmap[(yy * glyph.Width) + xx] * ((color.ARGB >> 8) & 0xFF) +
-                    (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8) << 8) | (uint)((glyph.Bitmap[(yy *
-                    glyph.Width) + xx] * ((color.ARGB) & 0xFF) + (256 - glyph.Bitmap[(yy * glyph.Width) + xx]) * (target[xx, yy].ARGB & 0xFF)) >> 8));*/
-
-                const string text = "Hello, world![]yjgpq";
-                var temp = Plex!.GetGlyph(text[0])!;
-                Screen.DrawString(10, 40, "Horizontal alignment of glyph '" + text[0] + "': " + temp.Left, DefaultFont, Color.White);
-                Screen.DrawString(10, 60, "Vertical alignment of glyph '" + text[0] + "': " + temp.Top, DefaultFont, Color.White);
-                Screen.DrawString(10, 80, "Resulting Y of glyph '" + text[0] + "': " + (Plex!.GetHeight() - temp.Top), DefaultFont, Color.White);
-                
-                for (int i = 0; i < text.Length; i++)
-                {
-                    var glyph = Plex!.GetGlyph(text[i])!;
-                    var target = Screen;
-                    var x = 0 + (i * 10) + glyph.Left;
-                    var y = 7 + Plex!.GetHeight() - glyph.Top;
-                    var color = Color.White;
-                    
-                    for (int yy = 0; yy < glyph.Height; yy++)
-                    {
-                        for (int xx = 0; xx < glyph.Width; xx++)
-                        {
-                            target[x + xx, y + yy] = new Color(255,
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((target[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (target[xx, yy].ARGB & 0xFF))) >> 8);
-                            
-                            //Screen.DrawString(xx * 8 + 10, yy * 16 + 100, "x", DefaultFont, new Color(glyph.Bitmap[yy * glyph.Width + xx], glyph.Bitmap[yy * glyph.Width + xx], glyph.Bitmap[yy * glyph.Width + xx]));
-                        }
-                    }
-                }
-
-                Screen.Update();
-
-                System.Console.ReadKey(true);
-
                 Console = new SVGAIITerminal(Screen.Width, ushort.MaxValue, Plex, Update)
                 {
                     IdleRequest = Idle,
                     ScrollRequest = Scroll,
-                    FontOffset = 7
+                    FontOffset = 11
                 };
                 Console.ParentHeight = Screen.Height / Console.FontHeight;
 
@@ -105,7 +64,7 @@ namespace TestKernel
 
                 Console.WriteLine("+------------------------------+\n" +
                                   "|  SVGAIITerminal Test Kernel  |\n" +
-                                  "|        Version 2.5.1         |\n" +
+                                  "|        Version 2.5.2         |\n" +
                                   "| Copyright (c) 2023-2024 xrc2 |\n" +
                                   "+------------------------------+\n");
 

@@ -187,10 +187,6 @@ public sealed unsafe class SVGAIITerminal
         Contents.Clear();
         CursorLeft = 0;
         CursorTop = 0;
-        
-        //Write("A", BackgroundColor);
-        // TODO: this doesn't work for some reason, try to fix
-        //CursorLeft--;
     }
     
     // TODO: change the order of these
@@ -262,9 +258,8 @@ public sealed unsafe class SVGAIITerminal
                 default:
                     Contents.DrawFilledRectangle(FontWidth * CursorLeft, (FontHeight * CursorTop) + FontOffset, FontWidth, FontHeight, 0, backColor);
 
-                    // TODO: remove unused code and uncomment out required code
                     // Check if it's necessary to draw the character
-                    /*if (c != ' ')
+                    if (c != ' ')
                     {
                         if (!UseAcfFont)
                         {
@@ -274,47 +269,23 @@ public sealed unsafe class SVGAIITerminal
                         }
                         else
                         {
-                            // TODO: fix font rendering
-                            // TODO: └─> fix alpha masking
-                            
                             var glyph = AcfFont!.GetGlyph(c)!;
                             var x = FontWidth * CursorLeft + glyph.Left;
-                            var y = FontHeight * CursorTop + FontHeight - glyph.Top;
+                            var y = FontHeight * CursorTop + FontHeight - glyph.Top - _fontExcessOffset;
                             
                             // Draw the character
                             for (int yy = 0; yy < glyph.Height; yy++)
                             {
                                 for (int xx = 0; xx < glyph.Width; xx++)
                                 {
-                                    Contents[x + xx, y + yy] = new Color(255,
+                                    Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
                                         (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
                                         (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8);
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
                                 }
                             }
                         }
-                    }*/
-                    
-                    // TODO: fix font rendering
-                    // TODO: └─> fix alpha masking
-                            
-                    /*var glyph = AcfFont!.GetGlyph(c)!;
-                    var x = FontWidth * CursorLeft + glyph.Left;
-                    var y = FontHeight * CursorTop + FontHeight - glyph.Top;
-                            
-                    // Draw the character
-                    for (int yy = 0; yy < glyph.Height; yy++)
-                    {
-                        for (int xx = 0; xx < glyph.Width; xx++)
-                        {
-                            Contents[x + xx, y + yy] = new Color(255,
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                                (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8);
-                        }
-                    }*/
-                    
-                    DrawGlyph(AcfFont!.GetGlyph(c)!, foreColor);
+                    }
 
                     CursorLeft++;
                     break;
@@ -567,7 +538,7 @@ public sealed unsafe class SVGAIITerminal
         {
             ForceDrawCursor(!_cursorState);
 
-            _lastSecond = Cosmos.HAL.RTC.Second;
+            _lastSecond = RTC.Second;
             _cursorState = !_cursorState;
         }
     }
@@ -619,36 +590,17 @@ public sealed unsafe class SVGAIITerminal
     {
         int width = 0;
 
-        for (int i = 32; i < 128; i++)
+        for (char c = ' '; c < ' '; c++)
         {
-            int temp = AcfFont!.GetGlyph((char)i)!.Width;
-            if (temp > width) width = temp;
+            var glyph = AcfFont!.GetGlyph(c)!;
+            var glyphWidth = glyph.Width;
+            var glyphExcess = FontHeight - glyph.Top + glyph.Height - FontHeight;
+                
+            if (glyphWidth > width) width = glyphWidth;
+            if (glyphExcess > _fontExcessOffset) _fontExcessOffset = glyphExcess;
         }
 
         return width;
-    }
-
-    /// <summary>
-    /// Draws an ACF glyph
-    /// </summary>
-    /// <param name="glyph">The glyph to draw</param>
-    /// <param name="color">The color to draw the glyph with</param>
-    private void DrawGlyph(Glyph glyph, Color color)
-    {
-        var x = FontWidth * CursorLeft + glyph.Left;
-        var y = FontHeight * CursorTop + FontHeight - glyph.Top;
-                            
-        // Draw the character
-        for (int yy = 0; yy < glyph.Height; yy++)
-        {
-            for (int xx = 0; xx < glyph.Width; xx++)
-            {
-                Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
-                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
-                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((color.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (color.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
-            }
-        }
     }
 
     #endregion
@@ -696,12 +648,12 @@ public sealed unsafe class SVGAIITerminal
     /// <summary>
     /// Cursor X coordinate
     /// </summary>
-    public int CursorLeft = 0;
+    public int CursorLeft;
 
     /// <summary>
     /// Cursor Y coordinate
     /// </summary>
-    public int CursorTop = 0;
+    public int CursorTop;
 
     /// <summary>
     /// Foreground console color
@@ -816,6 +768,14 @@ public sealed unsafe class SVGAIITerminal
     /// </summary>
     private string _lastInput = string.Empty;
 
+    /// <summary>
+    /// Font excess offset
+    /// </summary>
+    private int _fontExcessOffset;
+
+    /// <summary>
+    /// Cursor shape
+    /// </summary>
     private CursorShape _cursorShape = CursorShape.Block;
 
     #endregion
