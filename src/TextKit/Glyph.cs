@@ -2,6 +2,8 @@
  *  This file is part of the Mirage Desktop Environment.
  *  github.com/mirage-desktop/Mirage
  */
+
+using System;
 using System.Collections.Generic;
 
 namespace Mirage.TextKit
@@ -28,6 +30,27 @@ namespace Mirage.TextKit
             Width = width;
             Height = height;
             Bitmap = bitmap;
+            Points = new List<(int X, int Y)>();
+        }
+        
+        /// <summary>
+        /// Initialise a new glyph.
+        /// </summary>
+        /// <param name="left">The horizontal offset of the glyph's bitmap.</param>
+        /// <param name="top">The vertical offset of the glyph's bitmap.</param>
+        /// <param name="advanceX">How far to horizontally advance after blitting this glyph, in pixels.</param>
+        /// <param name="width">The width of the glyph's bitmap in pixels.</param>
+        /// <param name="height">The height of the glyph's bitmap in pixels.</param>
+        /// <param name="points">The buffer of the glyph's bitmap, as a list of points.</param>
+        public Glyph(int left, int top, int advanceX, int width, int height, List<(int X, int Y)> points)
+        {
+            Left = left;
+            Top = top;
+            AdvanceX = advanceX;
+            Width = width;
+            Height = height;
+            Bitmap = Array.Empty<byte>();
+            Points = points;
         }
 
         /// <summary>
@@ -59,10 +82,9 @@ namespace Mirage.TextKit
         /// </summary>
         public readonly byte[] Bitmap;
         
-        // TODO: finish implementing this
         /// <summary>
-        /// The buffer of the glyph's bitmap, as an list of points.
+        /// The buffer of the glyph's bitmap, as a list of points.
         /// </summary>
-        public List<(int X, int Y)> Points;
+        public readonly List<(int X, int Y)> Points;
     }
 }

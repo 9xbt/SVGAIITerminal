@@ -7,6 +7,7 @@ using System;
 using System.Runtime.InteropServices;
 using Cosmos.System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Cosmos.Core;
 using Cosmos.HAL;
 using Mirage.TextKit;
@@ -240,19 +241,32 @@ public sealed unsafe class SVGAIITerminal
                             CursorLeft++;
                             break;
                         }
-                        
-                        var x = _fontWidth * CursorLeft + glyph.Left;
-                        var y = Font.GetHeight() * CursorTop + Font.GetHeight() - glyph.Top - _fontExcessOffset;
-                            
-                        // Draw the character
-                        for (int yy = 0; yy < glyph.Height; yy++)
+
+                        if (glyph.Points.Count == 0)
                         {
-                            for (int xx = 0; xx < glyph.Width; xx++)
+                            // Get the X and Y position of where to draw the glyph at
+                            var x = _fontWidth * CursorLeft + glyph.Left;
+                            var y = Font.GetHeight() * CursorTop + Font.GetHeight() - glyph.Top - _fontExcessOffset;
+                            
+                            // Draw the ACF character
+                            for (int yy = 0; yy < glyph.Height; yy++)
                             {
-                                Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
-                                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
-                                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                                    (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
+                                for (int xx = 0; xx < glyph.Width; xx++)
+                                {
+                                    Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
+                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Draw the BTF character
+                            for (int j = 0; j < glyph.Points.Count; j++)
+                            {
+                                Contents[(_fontWidth * CursorLeft) + glyph.Points[j].X,
+                                    (Font.GetHeight() * CursorTop) + glyph.Points[j].Y] = foreColor;
                             }
                         }
                     }
@@ -570,11 +584,6 @@ public sealed unsafe class SVGAIITerminal
     };
 
     /// <summary>
-    /// The parent canvas's height. Used for handling scrolling
-    /// </summary>
-    public int ParentHeight;
-
-    /// <summary>
     /// Terminal width in characters
     /// </summary>
     public int Width;
@@ -583,6 +592,11 @@ public sealed unsafe class SVGAIITerminal
     /// Terminal height in characters
     /// </summary>
     public int Height;
+    
+    /// <summary>
+    /// The parent canvas's height. Used for handling scrolling
+    /// </summary>
+    public int ParentHeight;
 
     /// <summary>
     /// Cursor X coordinate
@@ -666,11 +680,6 @@ public sealed unsafe class SVGAIITerminal
     /// Charset length
     /// </summary>
     private const byte _charsetLength = 96;
-
-    /// <summary>
-    /// Cached bitfont glyphs
-    /// </summary>
-    private readonly PrismAPI.Graphics.Fonts.Glyph[] Glyphs = new PrismAPI.Graphics.Fonts.Glyph[_charsetLength];
 
     /// <summary>
     /// Last second

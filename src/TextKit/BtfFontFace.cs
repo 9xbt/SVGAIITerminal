@@ -1,6 +1,5 @@
-﻿using System.IO;
-using Cosmos.HAL;
-using Cosmos.System;
+﻿using System;
+using System.IO;
 
 namespace Mirage.TextKit
 {
@@ -39,46 +38,50 @@ namespace Mirage.TextKit
         /// </summary>
         private void ParseGlyphs()
         {
-            for (int i = 0; i < 96; i++)
-                _glyphs[i] = ParseGlyph(i);
+            for (char c = ' '; c < (char)128; c++)
+                _glyphs[c - 0x20] = ParseGlyph(c);
         }
 
         /// <summary>
         /// Parses a single glyph in the BTF font face from the stream
         /// </summary>
-        /// <param name="i">Glyph index</param>
-        private Glyph ParseGlyph(int i)
+        /// <param name="c">Character to parse</param>
+        private Glyph ParseGlyph(char c)
         {
             // Create new empty glyph.
-            Glyph glyph = new(0, 0, _size / 2, _size / 2, _size, new byte[_size * (_size / 2)]);
-            SerialPort.SendString("Created glyph! Left: " + glyph.Left + ", Top: " + glyph.Top + ", AdvanceX: " + glyph.AdvanceX + ", Width: " + glyph.Width + ", Height: " + glyph.Height + "\n");
-            SerialPort.SendString("Glyph bitmap:\n");
+            PrismAPI.Graphics.Fonts.Glyph Temp = new(0, _size);
 
-            if (i == 0) return glyph;
+            // Get the index of the char in the font.
+            int Index = PrismAPI.Graphics.Fonts.Font.DefaultCharset.IndexOf(c);
 
-            // TODO: fix this broken ass mess
-            for (int o = 0; o < _size * _size8; o++)
+            if (Index < 0)
             {
-                int X = o % _size8;
-                int Y = o / _size8;
+                return new(0, 0, _size / 2, _size / 2, _size, Temp.Points);
+            }
+
+            ushort SizePerFont = (ushort)(_size * _size8 * Index);
+
+            for (int I = 0; I < _size * _size8; I++)
+            {
+                int X = I % _size8;
+                int Y = I / _size8;
 
                 for (int ww = 0; ww < 8; ww++)
                 {
-                    if ((_binary[(ushort)(_size * _size8 * i) + (Y * _size8) + X] & (0x80 >> ww)) != 0)
+                    if ((_binary[SizePerFont + (Y * _size8) + X] & (0x80 >> ww)) != 0)
                     {
-                        glyph.Bitmap[Y * _size + ((X * 8) + ww)] = 0xFF;
-                        SerialPort.SendString("x ");
-                    }
-                    else
-                    {
-                        SerialPort.Send(' ');
+                        int Max = (X * 8) + ww;
+
+                        Temp.Points.Add((Max, Y));
+
+                        // Get max font width used.
+                        Temp.Width = (ushort)Math.Max(Temp.Width, Max);
                     }
                 }
-                    
-                SerialPort.Send('\n');
             }
 
-            return glyph;
+            // Return the glyph.
+            return new(0, 0, Temp.Width, Temp.Width, _size, Temp.Points);
         }
 
         public override string GetFamilyName() => _familyName;
@@ -89,12 +92,12 @@ namespace Mirage.TextKit
 
         public override Glyph? GetGlyph(char c)
         {
-            if (c < 32 || c > 127)
+            if (c < 0x20 || c >= _glyphs.Length + 0x20)
             {
                 return null;
             }
 
-            return _glyphs[c - 32];
+            return _glyphs[c - 0x20];
         }
 
         /// <summary>

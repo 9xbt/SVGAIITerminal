@@ -19,7 +19,7 @@ namespace TestKernel
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.Mouse.bmp")] private static readonly byte[] _rawMouseBmp;
         [ManifestResourceStream(ResourceName = "TestKernel.Resources.lipsum.txt")] private static readonly byte[] _rawLipsum;
 
-        private static FontFace DefaultFont; // TODO: this might crash it; yep indeed
+        private static readonly FontFace VGA = new BtfFontFace(_rawDefaultFontBtf, 16);
         private static readonly FontFace Plex = new AcfFontFace(new MemoryStream(_rawPlexAcf));
         private static readonly Canvas Mouse = Image.FromBitmap(_rawMouseBmp, false);
         private static readonly string Lipsum = Encoding.ASCII.GetString(_rawLipsum);
@@ -40,12 +40,12 @@ namespace TestKernel
                 Screen = Display.GetDisplay(1024, 768);
                 Screen.DefineCursor(Mouse);
 
-                Console = new SVGAIITerminal(Screen.Width, ushort.MaxValue, Plex, Update)
+                Console = new SVGAIITerminal(Screen.Width, ushort.MaxValue, VGA, Update)
                 {
                     IdleRequest = Idle,
                     ScrollRequest = Scroll,
-                    FontOffset = 11,
-                    ParentHeight = Screen.Height / Plex.GetHeight()
+                    FontOffset = 0,
+                    ParentHeight = Screen.Height / VGA.GetHeight()
                 };
 
                 Console.Clear();
@@ -63,7 +63,7 @@ namespace TestKernel
 
                 Console.WriteLine("+------------------------------+\n" +
                                   "|  SVGAIITerminal Test Kernel  |\n" +
-                                  "|        Version 2.5.2         |\n" +
+                                  "|        Version 2.5.3         |\n" +
                                   "| Copyright (c) 2023-2024 xrc2 |\n" +
                                   "+------------------------------+\n");
 
@@ -75,9 +75,6 @@ namespace TestKernel
 
                 Console.ResetColor();
                 Console.WriteLine("\n");
-
-                // TODO: fix this
-                //DefaultFont = new BtfFontFace(_rawDefaultFontBtf, 16);
             }
             catch (Exception ex)
             {
