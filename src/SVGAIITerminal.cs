@@ -41,35 +41,34 @@ public sealed unsafe class SVGAIITerminal
     
     #region Constructors
 
-    /*/// <summary>
+    /// <summary>
     /// Creates an instance of <see cref="SVGAIITerminal"/>
     /// </summary>
     /// <param name="Width">Terminal width</param>
     /// <param name="Height">Terminal height</param>
     /// <param name="Font">Terminal font</param>
-    public SVGAIITerminal(int Width, int Height, Font Font)
+    public SVGAIITerminal(int Width, int Height, FontFace Font)
     {
         // Null, out of range & out of memory checks
-        if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
+        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
+        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
         if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
+        
+        // Initialize the display driver
+        Display screen = Display.GetDisplay((ushort)Width, (ushort)Height);
 
         // Initialize the terminal
         this.Font = Font;
+        _fontWidth = (ushort)GetWidestCharacterWidth();
         this.Width = Width / (_fontWidth);
         this.Height = Height / Font.GetHeight();
-        _fontWidth = (ushort)(Font.Size / 2);
-        Font.GetHeight() = Font.Size;
         ParentHeight = Height;
-        Contents = Display.GetDisplay((ushort)Width, (ushort)Height);
+        Contents = new Canvas((ushort)Width, (ushort)Height);
         UpdateRequest = () =>
         {
-            Contents.DrawImage(0, 0, Contents, false);
-            ((Display)Contents).Update();
+            screen.DrawImage(0, -FontOffset, Contents, false);
+            screen.Update();
         };
-
-        // Generate the font's glyphs
-        CacheGlyphs();
     }
 
     /// <summary>
@@ -78,32 +77,28 @@ public sealed unsafe class SVGAIITerminal
     /// <param name="Width">Terminal width</param>
     /// <param name="Height">Terminal height</param>
     /// <param name="Font">Terminal font</param>
-    /// <param name="Screen">Screen the terminal renders to</param>
-    public SVGAIITerminal(int Width, int Height, Font Font, Display Screen)
+    /// <param name="Screen">Screen to render the terminal to</param>
+    public SVGAIITerminal(int Width, int Height, FontFace Font, Display Screen)
     {
         // Null, out of range & out of memory checks
-        if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
+        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
+        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
         if (Screen == null) throw new ArgumentNullException(nameof(Screen));
         if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
 
         // Initialize the terminal
         this.Font = Font;
+        _fontWidth = (ushort)GetWidestCharacterWidth();
         this.Width = Width / (_fontWidth);
         this.Height = Height / Font.GetHeight();
-        _fontWidth = (ushort)(Font.Size / 2);
-        Font.GetHeight() = Font.Size;
         ParentHeight = Height;
-        Contents = Screen;
+        Contents = new Canvas((ushort)Width, (ushort)Height);
         UpdateRequest = () =>
         {
-            Screen.DrawImage(0, 0, Contents, false);
+            Screen.DrawImage(0, -FontOffset, Contents, false);
             Screen.Update();
         };
-
-        // Generate the font's glyphs
-        CacheGlyphs();
-    }*/
+    }
 
     /// <summary>
     /// Creates an instance of <see cref="SVGAIITerminal"/>
@@ -111,12 +106,12 @@ public sealed unsafe class SVGAIITerminal
     /// <param name="Width">Terminal width</param>
     /// <param name="Height">Terminal height</param>
     /// <param name="Font">Terminal font</param>
-    /// <param name="UpdateRequest">Update request action, user can manually manage where and how to render the terminal</param>
+    /// <param name="UpdateRequest">Called when the terminal finishes rendering text</param>
     public SVGAIITerminal(int Width, int Height, FontFace Font, Action? UpdateRequest)
     {
         // Null, out of range & out of memory checks
-        if (Width > ushort.MaxValue || Width < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height > ushort.MaxValue || Height < 0) throw new ArgumentOutOfRangeException(nameof(Height));
+        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
+        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
         if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
 
         // Initialize the fields
@@ -709,7 +704,7 @@ public sealed unsafe class SVGAIITerminal
     /// <summary>
     /// Font width
     /// </summary>
-    private ushort _fontWidth;
+    private readonly ushort _fontWidth;
 
     #endregion
 }
