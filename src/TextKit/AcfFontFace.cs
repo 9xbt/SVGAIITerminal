@@ -1,22 +1,23 @@
 /*
- *  This file is part of the Mirage Desktop Environment.
+ *  This file was originally part of the Mirage Desktop Environment
  *  github.com/mirage-desktop/Mirage
  */
+
 using System.IO;
 using System;
 using System.Text;
 
-namespace Mirage.TextKit
+namespace SVGAIITerminal.TextKit
 {
     /// <summary>
-    /// An ACF (Advanced Cosmos Font Format) font face.
+    /// An ACF font face
     /// </summary>
     public class AcfFontFace : FontFace
     {
         /// <summary>
-        /// Initialise a new ACF (Advanced Cosmos Font Format) font face.
+        /// Initialize a new ACF (Advanced Cosmos Font Format) font face
         /// </summary>
-        /// <param name="stream">The data of the .acf font file.</param>
+        /// <param name="stream">The data of the .acf font file</param>
         public AcfFontFace(Stream stream)
         {
             _stream = stream;
@@ -32,29 +33,29 @@ namespace Mirage.TextKit
         }
 
         /// <summary>
-        /// Check if a set of magic bytes are valid for the ACF format.
+        /// Check if a set of magic bytes are valid for the ACF format
         /// </summary>
-        /// <param name="magic">The magic bytes.</param>
-        /// <returns>If the magic bytes are valid.</returns>
+        /// <param name="magic">The magic bytes</param>
+        /// <returns>If the magic bytes are valid</returns>
         private static bool AreMagicBytesValid(byte[] magic)
         {
             return magic[0] == 0x41 && magic[1] == 0x43 && magic[2] == 0x46;
         }
 
         /// <summary>
-        /// Check if a set of ending magic bytes are valid for the ACF format.
+        /// Check if a set of ending magic bytes are valid for the ACF format
         /// </summary>
-        /// <param name="magic">The ending magic bytes.</param>
-        /// <returns>If the ending magic bytes are valid.</returns>
+        /// <param name="magic">The ending magic bytes</param>
+        /// <returns>If the ending magic bytes are valid</returns>
         private static bool AreEndingMagicBytesValid(byte[] magic)
         {
             return magic[0] == 0x46 && magic[1] == 0x43 && magic[2] == 0x41;
         }
 
         /// <summary>
-        /// Parse the magic bytes at the beginning of the ACF font face's stream.
+        /// Parse the magic bytes at the beginning of the ACF font face's stream
         /// </summary>
-        /// <exception cref="InvalidDataException">Thrown when the magic bytes are not valid.</exception>
+        /// <exception cref="InvalidDataException">Thrown when the magic bytes are not valid</exception>
         private void ParseMagic()
         {
             byte[] magicBuf = new byte[3];
@@ -64,9 +65,9 @@ namespace Mirage.TextKit
         }
 
         /// <summary>
-        /// Parse the magic bytes at the end of the ACF font face's stream.
+        /// Parse the magic bytes at the end of the ACF font face's stream
         /// </summary>
-        /// <exception cref="InvalidDataException">Thrown when the ending magic bytes are not valid.</exception>
+        /// <exception cref="InvalidDataException">Thrown when the ending magic bytes are not valid</exception>
         private void ParseEndingMagic()
         {
             byte[] endingMagicBuf = new byte[3];
@@ -76,15 +77,17 @@ namespace Mirage.TextKit
         }
 
         /// <summary>
-        /// Parse the format version of the stream.
+        /// Parse the format version of the stream
         /// </summary>
-        /// <exception cref="NotSupportedException">Thrown when the version is not supported by the parser.</exception>
+        /// <exception cref="NotSupportedException">Thrown when the version is not supported by the parser</exception>
         private void ParseVersion()
         {
             _version = (byte)_stream.ReadByte();
             if (_version != 0)
                 throw new NotSupportedException("Unuspported ACF version.");
         }
+        
+        // TODO: finish americanizing the summaries
 
         /// <summary>
         /// Parse the pixel format of the ACF font face.

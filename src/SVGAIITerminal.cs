@@ -3,13 +3,13 @@
  *  If a license wasn't included with the program,
  *  refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md
  */
+
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Cosmos.HAL;
 using Cosmos.Core;
 using Cosmos.System;
-using Mirage.TextKit;
+using SVGAIITerminal.TextKit;
 using PCSpeaker = Cosmos.System.PCSpeaker;
 #if USE_GRAPEGL
 using GrapeGL.Graphics;
@@ -19,15 +19,7 @@ using PrismAPI.Graphics;
 using PrismAPI.Hardware.GPU;
 #endif
 
-/// <summary>
-/// Cursor shape enum for <see cref="SVGAIITerminal"/>
-/// </summary>
-public enum CursorShape
-{
-    Underline,
-    Carret,
-    Block
-}
+namespace SVGAIITerminal;
 
 /// <summary>
 /// A fast, instanceable & high resolution terminal
@@ -106,30 +98,12 @@ public sealed unsafe class SVGAIITerminal
         // Initialize the fields
         this.Font = Font;
         _fontWidth = (ushort)GetWidestCharacterWidth();
-        this.Width = Width / (_fontWidth);
+        this.Width = Width / _fontWidth;
         this.Height = Height / Font.GetHeight();
         this.UpdateRequest = UpdateRequest;
         ParentHeight = Height;
         Contents = new Canvas((ushort)Width, (ushort)Height);
     }
-
-    #endregion
-
-    #region Finalizers
-
-    /// <summary>
-    /// Frees this instance of <see cref="SVGAIITerminal"/> from memory
-    /// </summary>
-    ~SVGAIITerminal()
-    {
-        NativeMemory.Free(Contents.Internal);
-    }
-
-    #endregion
-
-    #region Properties
-
-    // TODO: add properties
 
     #endregion
 
@@ -208,7 +182,7 @@ public sealed unsafe class SVGAIITerminal
                     break;
 
                 case '\t':
-                    Write(_tab);
+                    Write(TabIndentation);
                     break;
 
                 default:
@@ -386,15 +360,12 @@ public sealed unsafe class SVGAIITerminal
                 case ConsoleKeyEx.Backspace:
                     if (!(CursorLeft == startX && CursorTop == startY))
                     {
-                        for (int i = 0; i < (input[^1] == '\t' ? 4 : 1); i++)
-                        {
-                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
-                            CursorTop -= CursorLeft == 0 ? 1 : 0;
-                            CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
-                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
-                        }
-
-                        input = input.Remove(input.Length - (input[^1] == '\t' ? 4 : 1));
+                        Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
+                        CursorTop -= CursorLeft == 0 ? 1 : 0;
+                        CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
+                        Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
+                        
+                        input = input.Remove(input.Length - 1);
                     }
 
                     ForceDrawCursor();
@@ -402,7 +373,7 @@ public sealed unsafe class SVGAIITerminal
 
                 case ConsoleKeyEx.Tab:
                     Write('\t');
-                    input += _tab;
+                    input += TabIndentation;
 
                     ForceDrawCursor();
                     break;
@@ -462,11 +433,7 @@ public sealed unsafe class SVGAIITerminal
     /// </summary>
     /// <param name="freq">Sound frequency</param>
     /// <param name="duration">Sound duration</param>
-    public void Beep(uint freq = 800, uint duration = 125)
-    {
-        PCSpeaker.Beep(freq, duration);
-        System.Threading.Thread.Sleep(200); // TODO: remove this delay
-    }
+    public void Beep(uint freq = 800, uint duration = 125) => PCSpeaker.Beep(freq, duration);
 
     /// <summary>
     /// Sets the foreground and background colors to their defaults
@@ -510,7 +477,7 @@ public sealed unsafe class SVGAIITerminal
 
         Contents.DrawFilledRectangle(_fontWidth * CursorLeft,
             CursorShape == CursorShape.Underline ? Font.GetHeight() * (CursorTop + 1) - 2 : Font.GetHeight() * CursorTop,
-            (ushort)(CursorShape == CursorShape.Carret ? 2 : _fontWidth),
+            (ushort)(CursorShape == CursorShape.Caret ? 2 : _fontWidth),
             (ushort)(CursorShape == CursorShape.Underline ? 2 : Font.GetHeight()), 0, invert ? BackgroundColor : ForegroundColor);
 
         UpdateRequest?.Invoke();
@@ -521,14 +488,12 @@ public sealed unsafe class SVGAIITerminal
     /// </summary>
     private void TryDrawCursor()
     {
-        // Note: do not invert, else the cursor will go brrr
-        if (CursorVisible && RTC.Second != _lastSecond)
-        {
-            ForceDrawCursor(!_cursorState);
-
-            _lastSecond = RTC.Second;
-            _cursorState = !_cursorState;
-        }
+        if (!CursorVisible || RTC.Second == _lastSecond) return;
+        
+        _lastSecond = RTC.Second;
+        _cursorState = !_cursorState;
+        
+        ForceDrawCursor(_cursorState);
     }
 
     /// <summary>
@@ -541,6 +506,7 @@ public sealed unsafe class SVGAIITerminal
 
         for (char c = ' '; c < ' '; c++)
         {
+            // Get the glyph
             var glyph = Font.GetGlyph(c);
             
             // Check if the glyph is null
@@ -563,11 +529,21 @@ public sealed unsafe class SVGAIITerminal
     #endregion
 
     #region Fields
+    
+    /// <summary>
+    /// Terminal width in characters
+    /// </summary>
+    public readonly int Width;
+
+    /// <summary>
+    /// Terminal height in characters
+    /// </summary>
+    public readonly int Height;
 
     /// <summary>
     /// Converts <see cref="ConsoleColor"/> to <see cref="Color"/>
     /// </summary>
-    public readonly List<Color> ColorConverter = new List<Color>
+    public readonly List<Color> ColorConverter = new()
     {
         new Color(0, 0, 0),
         new Color(0, 0, 170),
@@ -586,22 +562,22 @@ public sealed unsafe class SVGAIITerminal
         new Color(255, 255, 85),
         new Color(255, 255, 255),
     };
-
-    /// <summary>
-    /// Terminal width in characters
-    /// </summary>
-    public int Width;
-
-    /// <summary>
-    /// Terminal height in characters
-    /// </summary>
-    public int Height;
     
     /// <summary>
-    /// The parent canvas's height. Used for handling scrolling
+    /// Console contents
     /// </summary>
-    public int ParentHeight;
+    public readonly Canvas Contents;
+    
+    /// <summary>
+    /// Console font
+    /// </summary>
+    public readonly FontFace Font;
 
+    /// <summary>
+    /// Update request action
+    /// </summary>
+    public readonly Action? UpdateRequest;
+    
     /// <summary>
     /// Cursor X coordinate
     /// </summary>
@@ -611,6 +587,16 @@ public sealed unsafe class SVGAIITerminal
     /// Cursor Y coordinate
     /// </summary>
     public int CursorTop;
+    
+    /// <summary>
+    /// The parent canvas's height. Used for handling scrolling
+    /// </summary>
+    public int ParentHeight;
+    
+    /// <summary>
+    /// Is cursor visible
+    /// </summary>
+    public bool CursorVisible = true;
 
     /// <summary>
     /// Foreground console color
@@ -621,11 +607,6 @@ public sealed unsafe class SVGAIITerminal
     /// Background console color
     /// </summary>
     public Color BackgroundColor = Color.Black;
-
-    /// <summary>
-    /// Is cursor visible
-    /// </summary>
-    public bool CursorVisible = true;
 
     /// <summary>
     /// Cursor state
@@ -641,21 +622,6 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Console contents
-    /// </summary>
-    public Canvas Contents;
-
-    /// <summary>
-    /// Console font
-    /// </summary>
-    public FontFace Font;
-
-    /// <summary>
-    /// Update request action
-    /// </summary>
-    public Action? UpdateRequest;
-
-    /// <summary>
     /// Called in a loop when ReadLine or ReadKey are idling
     /// </summary>
     public Action? IdleRequest;
@@ -666,20 +632,15 @@ public sealed unsafe class SVGAIITerminal
     public Action? ScrollRequest;
 
     /// <summary>
-    /// Gets a value indicating whether a key press is available in the input stream
-    /// </summary>
-    public bool KeyAvailable => KeyboardManager.KeyAvailable;
-
-    /// <summary>
     /// Tab indentation
     /// </summary>
-    private const string _tab = "    ";
+    private const string TabIndentation = "    ";
 
     /// <summary>
-    /// Charset length
+    /// Font width
     /// </summary>
-    private const byte _charsetLength = 96;
-
+    private readonly ushort _fontWidth;
+    
     /// <summary>
     /// Last second
     /// </summary>
@@ -691,24 +652,19 @@ public sealed unsafe class SVGAIITerminal
     private static bool _cursorState = true;
     
     /// <summary>
-    /// Cursor shape
+    /// Font excess offset
     /// </summary>
-    private CursorShape _cursorShape = CursorShape.Block;
-
+    private int _fontExcessOffset;
+    
     /// <summary>
     /// Last input
     /// </summary>
     private string _lastInput = string.Empty;
-
+    
     /// <summary>
-    /// Font excess offset
+    /// Cursor shape
     /// </summary>
-    private int _fontExcessOffset;
-
-    /// <summary>
-    /// Font width
-    /// </summary>
-    private readonly ushort _fontWidth;
+    private CursorShape _cursorShape = CursorShape.Block;
 
     #endregion
 }

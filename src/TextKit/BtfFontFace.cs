@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Mirage.TextKit
+namespace SVGAIITerminal.TextKit
 {
     /// <summary>
     /// A bitfont format font face

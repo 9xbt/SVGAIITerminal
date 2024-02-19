@@ -1,27 +1,27 @@
 /*
- *  This file is part of the Mirage Desktop Environment.
+ *  This file was originally part of the Mirage Desktop Environment
  *  github.com/mirage-desktop/Mirage
  */
 
 using System;
 using System.Collections.Generic;
 
-namespace Mirage.TextKit
+namespace SVGAIITerminal.TextKit
 {
     /// <summary>
-    /// Represents a single, reusable glyph for a character.
+    /// Represents a single, reusable glyph for a character
     /// </summary>
     public class Glyph
     {   
         /// <summary>
-        /// Initialise a new glyph.
+        /// Initialize a new glyph
         /// </summary>
-        /// <param name="left">The horizontal offset of the glyph's bitmap.</param>
-        /// <param name="top">The vertical offset of the glyph's bitmap.</param>
-        /// <param name="advanceX">How far to horizontally advance after blitting this glyph, in pixels.</param>
-        /// <param name="width">The width of the glyph's bitmap in pixels.</param>
-        /// <param name="height">The height of the glyph's bitmap in pixels.</param>
-        /// <param name="bitmap">The buffer of the glyph's bitmap, as an array of alpha values.</param>
+        /// <param name="left">The horizontal offset of the glyph's bitmap</param>
+        /// <param name="top">The vertical offset of the glyph's bitmap</param>
+        /// <param name="advanceX">How far to horizontally advance after rendering this glyph, in pixels</param>
+        /// <param name="width">The width of the glyph's bitmap in pixels</param>
+        /// <param name="height">The height of the glyph's bitmap in pixels</param>
+        /// <param name="bitmap">The buffer of the glyph's bitmap, as an array of alpha values</param>
         public Glyph(int left, int top, int advanceX, int width, int height, byte[] bitmap)
         {
             Left = left;
@@ -34,14 +34,14 @@ namespace Mirage.TextKit
         }
         
         /// <summary>
-        /// Initialise a new glyph.
+        /// Initialize a new glyph
         /// </summary>
-        /// <param name="left">The horizontal offset of the glyph's bitmap.</param>
-        /// <param name="top">The vertical offset of the glyph's bitmap.</param>
-        /// <param name="advanceX">How far to horizontally advance after blitting this glyph, in pixels.</param>
-        /// <param name="width">The width of the glyph's bitmap in pixels.</param>
-        /// <param name="height">The height of the glyph's bitmap in pixels.</param>
-        /// <param name="points">The buffer of the glyph's bitmap, as a list of points.</param>
+        /// <param name="left">The horizontal offset of the glyph's bitmap</param>
+        /// <param name="top">The vertical offset of the glyph's bitmap</param>
+        /// <param name="advanceX">How far to horizontally advance after rendering this glyph, in pixels</param>
+        /// <param name="width">The width of the glyph's bitmap in pixels</param>
+        /// <param name="height">The height of the glyph's bitmap in pixels</param>
+        /// <param name="points">The buffer of the glyph's bitmap, as a list of points</param>
         public Glyph(int left, int top, int advanceX, int width, int height, List<(int X, int Y)> points)
         {
             Left = left;
@@ -54,36 +54,37 @@ namespace Mirage.TextKit
         }
 
         /// <summary>
-        /// The horizontal offset of the glyph's bitmap.
+        /// The horizontal offset of the glyph's bitmap
         /// </summary>
         public readonly int Left;
+        
         /// <summary>
-        /// The vertical offset of the glyph's bitmap. Should be subtracted from the baseline.
+        /// The vertical offset of the glyph's bitmap. Should be subtracted from the baseline
         /// </summary>
         public readonly int Top;
 
         /// <summary>
-        /// How far to horizontally advance after blitting this glyph, in pixels.
+        /// How far to horizontally advance after rendering this glyph, in pixels
         /// </summary>
         public readonly int AdvanceX;
 
         /// <summary>
-        /// The width of the glyph's bitmap in pixels.
+        /// The width of the glyph's bitmap in pixels
         /// </summary>
         public readonly int Width;
 
         /// <summary>
-        /// The height of the glyph's bitmap in pixels.
+        /// The height of the glyph's bitmap in pixels
         /// </summary>
         public readonly int Height;
 
         /// <summary>
-        /// The buffer of the glyph's bitmap, as an array of alpha values.
+        /// The buffer of the glyph's bitmap, as an array of alpha values
         /// </summary>
         public readonly byte[] Bitmap;
         
         /// <summary>
-        /// The buffer of the glyph's bitmap, as a list of points.
+        /// The buffer of the glyph's bitmap, as a list of points
         /// </summary>
         public readonly List<(int X, int Y)> Points;
     }
