@@ -4,22 +4,19 @@
  *  refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md
  */
 using System;
-using System.Runtime.InteropServices;
-using Cosmos.System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Cosmos.Core;
+using System.Runtime.InteropServices;
 using Cosmos.HAL;
+using Cosmos.Core;
+using Cosmos.System;
 using Mirage.TextKit;
 using PCSpeaker = Cosmos.System.PCSpeaker;
 #if USE_GRAPEGL
-using GrapeGL.Hardware.GPU;
 using GrapeGL.Graphics;
-using GrapeGL.Graphics.Fonts;
+using GrapeGL.Hardware.GPU;
 #else
-using PrismAPI.Hardware.GPU;
 using PrismAPI.Graphics;
-using PrismAPI.Graphics.Fonts;
+using PrismAPI.Hardware.GPU;
 #endif
 
 /// <summary>
@@ -53,9 +50,6 @@ public sealed unsafe class SVGAIITerminal
         if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
         if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
         if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
-        
-        // Initialize the display driver
-        Display screen = Display.GetDisplay((ushort)Width, (ushort)Height);
 
         // Initialize the terminal
         this.Font = Font;
@@ -63,11 +57,10 @@ public sealed unsafe class SVGAIITerminal
         this.Width = Width / (_fontWidth);
         this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
-        Contents = new Canvas((ushort)Width, (ushort)Height);
+        Contents = Display.GetDisplay((ushort)Width, (ushort)Height);
         UpdateRequest = () =>
         {
-            screen.DrawImage(0, -FontOffset, Contents, false);
-            screen.Update();
+            ((Display)Contents).Update();
         };
     }
 
@@ -92,12 +85,8 @@ public sealed unsafe class SVGAIITerminal
         this.Width = Width / (_fontWidth);
         this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
-        Contents = new Canvas((ushort)Width, (ushort)Height);
-        UpdateRequest = () =>
-        {
-            Screen.DrawImage(0, -FontOffset, Contents, false);
-            Screen.Update();
-        };
+        Contents = Screen;
+        UpdateRequest = Screen.Update;
     }
 
     /// <summary>
@@ -223,7 +212,7 @@ public sealed unsafe class SVGAIITerminal
                     break;
 
                 default:
-                    Contents.DrawFilledRectangle(_fontWidth * CursorLeft, (Font.GetHeight() * CursorTop) + FontOffset, _fontWidth, (ushort)Font.GetHeight(), 0, backColor);
+                    Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, backColor);
 
                     // Check if it's necessary to draw the character
                     if (c != ' ')
@@ -248,10 +237,30 @@ public sealed unsafe class SVGAIITerminal
                             {
                                 for (int xx = 0; xx < glyph.Width; xx++)
                                 {
-                                    Contents.Internal[((y + yy + FontOffset) * Contents.Width + (x + xx))] = new Color(255,
-                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 16) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 16) & 0xFF)) >> 8),
-                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * ((foreColor.ARGB >> 8) & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * ((Contents[xx, yy].ARGB >> 8) & 0xFF)) >> 8),
-                                        (uint)((glyph.Bitmap[yy * glyph.Width + xx] * (foreColor.ARGB & 0xFF) + (256 - glyph.Bitmap[yy * glyph.Width + xx]) * (Contents[xx, yy].ARGB & 0xFF))) >> 8).ARGB;
+                                    uint alpha = glyph.Bitmap[yy * glyph.Width + xx];
+                                    uint invAlpha = 256 - alpha;
+
+                                    int canvasIdx = (y + yy) * Contents.Width + x + xx;
+
+                                    uint backgroundArgb = Contents.Internal[canvasIdx];
+                                    uint glyphColorArgb = foreColor.ARGB;
+                                    
+                                    byte backgroundR = (byte)((backgroundArgb >> 16) & 0xFF);
+                                    byte backgroundG = (byte)((backgroundArgb >> 8) & 0xFF);
+                                    byte backgroundB = (byte)(backgroundArgb & 0xFF);
+
+                                    byte foregroundR = (byte)((glyphColorArgb >> 16) & 0xFF);
+                                    byte foregroundG = (byte)((glyphColorArgb >> 8) & 0xFF);
+                                    byte foregroundB = (byte)((glyphColorArgb) & 0xFF);
+                                    
+                                    byte a = 255;
+                                    byte r = (byte)((alpha * foregroundR + invAlpha * backgroundR) >> 8);
+                                    byte g = (byte)((alpha * foregroundG + invAlpha * backgroundG) >> 8);
+                                    byte b = (byte)((alpha * foregroundB + invAlpha * backgroundB) >> 8);
+                                    
+                                    uint color = ((uint)a << 24) | ((uint)r << 16) | ((uint)g << 8) | b;
+
+                                    Contents.Internal[canvasIdx] = color;
                                 }
                             }
                         }
@@ -260,8 +269,8 @@ public sealed unsafe class SVGAIITerminal
                             // Draw the BTF character
                             for (int j = 0; j < glyph.Points.Count; j++)
                             {
-                                Contents[(_fontWidth * CursorLeft) + glyph.Points[j].X,
-                                    (Font.GetHeight() * CursorTop) + glyph.Points[j].Y] = foreColor;
+                                Contents[_fontWidth * CursorLeft + glyph.Points[j].X,
+                                    Font.GetHeight() * CursorTop + glyph.Points[j].Y] = foreColor;
                             }
                         }
                     }
@@ -365,7 +374,7 @@ public sealed unsafe class SVGAIITerminal
             {
                 case ConsoleKeyEx.Enter:
                     // TODO: change over to ForceDrawCursor(true)
-                    Contents.DrawFilledRectangle(_fontWidth * CursorLeft, (Font.GetHeight() * CursorTop) + FontOffset, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
+                    Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
                     
                     TryScroll();
 
@@ -379,10 +388,10 @@ public sealed unsafe class SVGAIITerminal
                     {
                         for (int i = 0; i < (input[^1] == '\t' ? 4 : 1); i++)
                         {
-                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, (Font.GetHeight() * CursorTop) + FontOffset, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
+                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
                             CursorTop -= CursorLeft == 0 ? 1 : 0;
                             CursorLeft -= CursorLeft == 0 ? Width - 1 : 1;
-                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, (Font.GetHeight() * CursorTop) + FontOffset, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
+                            Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
                         }
 
                         input = input.Remove(input.Length - (input[^1] == '\t' ? 4 : 1));
@@ -481,8 +490,8 @@ public sealed unsafe class SVGAIITerminal
 
         if (CursorTop >= Height)
         {
-            Contents.DrawImage(0, ((Height - CursorTop - 1) * Font.GetHeight()) + FontOffset, Contents, false);
-            Contents.DrawFilledRectangle(0, (Contents.Height - (CursorTop - Height + 1) * Font.GetHeight()) + FontOffset, Contents.Width, (ushort)((CursorTop - Height + 1) * Font.GetHeight()), 0, BackgroundColor);
+            Contents.DrawImage(0, (Height - CursorTop - 1) * Font.GetHeight(), Contents, false);
+            Contents.DrawFilledRectangle(0, Contents.Height - (CursorTop - Height + 1) * Font.GetHeight(), Contents.Width, (ushort)((CursorTop - Height + 1) * Font.GetHeight()), 0, BackgroundColor);
             CursorTop = Height - 1;
         }
 
@@ -500,7 +509,7 @@ public sealed unsafe class SVGAIITerminal
         if (!CursorVisible) return;
 
         Contents.DrawFilledRectangle(_fontWidth * CursorLeft,
-            (CursorShape == CursorShape.Underline ? (Font.GetHeight() * (CursorTop + 1) - 2) : Font.GetHeight() * CursorTop) + FontOffset,
+            CursorShape == CursorShape.Underline ? Font.GetHeight() * (CursorTop + 1) - 2 : Font.GetHeight() * CursorTop,
             (ushort)(CursorShape == CursorShape.Carret ? 2 : _fontWidth),
             (ushort)(CursorShape == CursorShape.Underline ? 2 : Font.GetHeight()), 0, invert ? BackgroundColor : ForegroundColor);
 
@@ -640,11 +649,6 @@ public sealed unsafe class SVGAIITerminal
     /// Console font
     /// </summary>
     public FontFace Font;
-
-    /// <summary>
-    /// Vertical font offset
-    /// </summary>
-    public int FontOffset;
 
     /// <summary>
     /// Update request action

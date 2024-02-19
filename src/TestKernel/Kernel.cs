@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using Cosmos.Core;
@@ -40,17 +41,11 @@ namespace TestKernel
                 Screen = Display.GetDisplay(1024, 768);
                 Screen.DefineCursor(Mouse);
 
-                /*Console = new SVGAIITerminal(Screen.Width, ushort.MaxValue, VGA, Update)
+                Console = new SVGAIITerminal(Screen.Width, Screen.Height, Plex, Update)
                 {
                     IdleRequest = Idle,
                     ScrollRequest = Scroll,
-                    FontOffset = 0,
-                    ParentHeight = Screen.Height / VGA.GetHeight()
-                };*/
-                
-                Console = new SVGAIITerminal(1024, 768, Plex, Screen)
-                {
-                    FontOffset = 11
+                    ParentHeight = Screen.Height / Plex.GetHeight()
                 };
 
                 Console.Clear();
@@ -61,14 +56,14 @@ namespace TestKernel
                 SuccessLog("Display driver initialized");
                 SuccessLog("SVGAIITerminal initialized");
 
-                //Sys.MouseManager.ScreenWidth = Screen.Width;
-                //Sys.MouseManager.ScreenHeight = Screen.Height;
+                Sys.MouseManager.ScreenWidth = Screen.Width;
+                Sys.MouseManager.ScreenHeight = Screen.Height;
 
                 SuccessLog("Mouse driver initialized\n");
 
                 Console.WriteLine("+------------------------------+\n" +
                                   "|  SVGAIITerminal Test Kernel  |\n" +
-                                  "|        Version 2.5.3         |\n" +
+                                  "|        Version 2.6.0         |\n" +
                                   "| Copyright (c) 2023-2024 xrc2 |\n" +
                                   "+------------------------------+\n");
 
@@ -149,7 +144,7 @@ namespace TestKernel
 
                     case "clear":
                         Console.Clear();
-                        //_termY = 0;
+                        _termY = 0;
                         break;
 
                     case "reboot":
@@ -183,11 +178,11 @@ namespace TestKernel
             }
         }
 
-        /*private int _termY;
+        private int _termY;
 
         private void Update()
         {
-            Screen.DrawImage(0, _termY - Console.FontOffset, Console.Contents, false);
+            Screen.DrawImage(0, _termY, Console.Contents, false);
             Screen.Update();
 
             Heap.Collect();
@@ -213,7 +208,7 @@ namespace TestKernel
         }
 
         private void Scroll()
-            => _termY = Screen.Height - ((Console.CursorTop + 1) * Console.Font.GetHeight());*/
+            => _termY = Screen.Height - ((Console.CursorTop + 1) * Console.Font.GetHeight());
 
         private void InfoLog(string msg)
         {
