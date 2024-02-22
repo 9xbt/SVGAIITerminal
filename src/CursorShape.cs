@@ -1,7 +1,7 @@
 ﻿namespace SVGAIITerminal;
 
 /// <summary>
-/// Cursor shape enum for <see cref="SVGAIITerminal"/>
+/// Represents the terminal's cursor shape.
 /// </summary>
 public enum CursorShape
 {

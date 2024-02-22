@@ -1,11 +1,12 @@
 ﻿/*
- *  This code is licensed under the ekzFreeUse license
+ *  This code is licensed under the ekzFreeUse license.
  *  If a license wasn't included with the program,
  *  refer to https://github.com/9xbt/SVGAIITerminal/blob/main/LICENSE.md
  */
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Cosmos.HAL;
 using Cosmos.Core;
 using Cosmos.System;
@@ -22,31 +23,23 @@ using PrismAPI.Hardware.GPU;
 namespace SVGAIITerminal;
 
 /// <summary>
-/// A fast, instanceable & high resolution terminal
+/// A fast, instanceable & high resolution terminal.
 /// </summary>
 public sealed unsafe class SVGAIITerminal
 {
-    // TODO: make summaries more descriptive
-    
     #region Constructors
 
     /// <summary>
-    /// Creates an instance of <see cref="SVGAIITerminal"/>
+    /// Initializes a new instance of <see cref="SVGAIITerminal"/>.
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Font">Terminal font</param>
+    /// <param name="Width">The width of the terminal.</param>
+    /// <param name="Height">The height of the terminal.</param>
+    /// <param name="Font">The font that's going to be used by the terminal.</param>
     public SVGAIITerminal(int Width, int Height, FontFace Font)
     {
-        // Null, out of range & out of memory checks
-        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
-        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
-
-        // Initialize the terminal
         this.Font = Font;
         _fontWidth = (ushort)GetWidestCharacterWidth();
-        this.Width = Width / (_fontWidth);
+        this.Width = Width / _fontWidth;
         this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
         Contents = Display.GetDisplay((ushort)Width, (ushort)Height);
@@ -57,52 +50,39 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Creates an instance of <see cref="SVGAIITerminal"/>
+    /// Initializes a new instance of <see cref="SVGAIITerminal"/>.
     /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Font">Terminal font</param>
-    /// <param name="Screen">Screen to render the terminal to</param>
+    /// <param name="Width">The width of the terminal.</param>
+    /// <param name="Height">The height of the terminal.</param>
+    /// <param name="Font">The font that's going to be used by the terminal.</param>
+    /// <param name="Screen">The screen the terminal is going to render to.</param>
     public SVGAIITerminal(int Width, int Height, FontFace Font, Display Screen)
     {
-        // Null, out of range & out of memory checks
-        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
-        if (Screen == null) throw new ArgumentNullException(nameof(Screen));
-        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
-
-        // Initialize the terminal
-        this.Font = Font;
-        _fontWidth = (ushort)GetWidestCharacterWidth();
-        this.Width = Width / (_fontWidth);
-        this.Height = Height / Font.GetHeight();
-        ParentHeight = Height;
-        Contents = Screen;
-        UpdateRequest = Screen.Update;
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="SVGAIITerminal"/>
-    /// </summary>
-    /// <param name="Width">Terminal width</param>
-    /// <param name="Height">Terminal height</param>
-    /// <param name="Font">Terminal font</param>
-    /// <param name="UpdateRequest">Called when the terminal finishes rendering text</param>
-    public SVGAIITerminal(int Width, int Height, FontFace Font, Action? UpdateRequest)
-    {
-        // Null, out of range & out of memory checks
-        if (Width is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Width));
-        if (Height is > ushort.MaxValue or < 0) throw new ArgumentOutOfRangeException(nameof(Height));
-        if (GCImplementation.GetAvailableRAM() - GCImplementation.GetUsedRAM() / 1e6 < Width * Height * 4 / 1e6 + 1) throw new OutOfMemoryException();
-
-        // Initialize the fields
         this.Font = Font;
         _fontWidth = (ushort)GetWidestCharacterWidth();
         this.Width = Width / _fontWidth;
         this.Height = Height / Font.GetHeight();
-        this.UpdateRequest = UpdateRequest;
+        ParentHeight = Height;
+        Contents = Screen ?? throw new ArgumentNullException(nameof(Screen));
+        UpdateRequest = Screen.Update;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="SVGAIITerminal"/>.
+    /// </summary>
+    /// <param name="Width">The width of the terminal.</param>
+    /// <param name="Height">The height of the terminal.</param>
+    /// <param name="Font">The font that's going to be used by the terminal.</param>
+    /// <param name="UpdateRequest">The function that the terminal calls for the kernel to render the terminal.</param>
+    public SVGAIITerminal(int Width, int Height, FontFace Font, Action? UpdateRequest)
+    {
+        this.Font = Font;
+        _fontWidth = (ushort)GetWidestCharacterWidth();
+        this.Width = Width / _fontWidth;
+        this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
         Contents = new Canvas((ushort)Width, (ushort)Height);
+        this.UpdateRequest = UpdateRequest;
     }
 
     #endregion
@@ -110,66 +90,64 @@ public sealed unsafe class SVGAIITerminal
     #region Methods
 
     /// <summary>
-    /// Clears the terminal
+    /// Clears the terminal.
     /// </summary>
     public void Clear()
     {
-        Contents.Clear();
+        Contents.Clear(BackgroundColor);
         CursorLeft = 0;
         CursorTop = 0;
     }
-    
-    // TODO: change the order of these
 
     /// <summary>
-    /// Prints a string to the terminal
+    /// Prints a string to the terminal.
     /// </summary>
-    /// <param name="str">String to print</param>
-    public void Write(object str)
-        => Write(str, ForegroundColor, BackgroundColor);
+    /// <param name="str">String to print.</param>
+    public void Write(object str) => Write(str, ForegroundColor, BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal
+    /// Prints a colored string to the terminal.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
     public void Write(object str, ConsoleColor foreColor)
         => Write(str, ColorConverter[(int)foreColor], BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal
+    /// Prints a colored string to the terminal.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    /// <param name="backColor">String background color</param>
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    /// <param name="backColor">The string's background color.</param>
     public void Write(object str, ConsoleColor foreColor, ConsoleColor backColor)
         => Write(str, ColorConverter[(int)foreColor], ColorConverter[(int)backColor]);
 
     /// <summary>
-    /// Prints a colored string to the terminal
+    /// Prints a colored string to the terminal.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    public void Write(object str, Color foreColor)
-        => Write(str, foreColor, BackgroundColor);
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    public void Write(object str, Color foreColor) => Write(str, foreColor, BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal
+    /// Prints a colored string to the terminal.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    /// <param name="backColor">String background color</param>
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    /// <param name="backColor">The string's background color.</param>
     public void Write(object str, Color foreColor, Color backColor)
     {
-        // Basic null check
+        // Basic null check.
         if (string.IsNullOrEmpty(str.ToString()))
         {
             return;
         }
 
-        // Print the string
+        // Print the string.
         foreach (char c in str.ToString()!)
         {
+            TryScroll();
+            
             switch (c)
             {
                 case '\r':
@@ -188,12 +166,13 @@ public sealed unsafe class SVGAIITerminal
                 default:
                     Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, backColor);
 
-                    // Check if it's necessary to draw the character
+                    // Check if it's necessary to draw the character.
                     if (c != ' ')
                     {
+                        // Get the glyph.
                         var glyph = Font.GetGlyph(c);
 
-                        // Check if the glyph is null
+                        // Check if the glyph is null.
                         if (glyph == null)
                         {
                             CursorLeft++;
@@ -202,49 +181,59 @@ public sealed unsafe class SVGAIITerminal
 
                         if (glyph.Points.Count == 0)
                         {
-                            // Get the X and Y position of where to draw the glyph at
+                            // Get the X and Y position of where to draw the glyph at.
                             var x = _fontWidth * CursorLeft + glyph.Left;
                             var y = Font.GetHeight() * CursorTop + Font.GetHeight() - glyph.Top - _fontExcessOffset;
                             
-                            // Draw the ACF character
+                            // Draw the ACF glyph.
                             for (int yy = 0; yy < glyph.Height; yy++)
                             {
                                 for (int xx = 0; xx < glyph.Width; xx++)
                                 {
+                                    // Get the alpha value of the glyph's pixel and the inverted value.
                                     uint alpha = glyph.Bitmap[yy * glyph.Width + xx];
                                     uint invAlpha = 256 - alpha;
 
+                                    // Get the index of the framebuffer of where to draw the point at.
                                     int canvasIdx = (y + yy) * Contents.Width + x + xx;
 
+                                    // Get the background ARGB value and the glyph color's ARGB value.
                                     uint backgroundArgb = Contents.Internal[canvasIdx];
                                     uint glyphColorArgb = foreColor.ARGB;
                                     
+                                    // Store the individual background color's R, G and B values.
                                     byte backgroundR = (byte)((backgroundArgb >> 16) & 0xFF);
                                     byte backgroundG = (byte)((backgroundArgb >> 8) & 0xFF);
                                     byte backgroundB = (byte)(backgroundArgb & 0xFF);
 
+                                    // Store the individual glyph foreground color's R, G and B values.
                                     byte foregroundR = (byte)((glyphColorArgb >> 16) & 0xFF);
                                     byte foregroundG = (byte)((glyphColorArgb >> 8) & 0xFF);
                                     byte foregroundB = (byte)((glyphColorArgb) & 0xFF);
                                     
-                                    byte a = 255;
+                                    // Get the individual R, G and B values for the blended color.
                                     byte r = (byte)((alpha * foregroundR + invAlpha * backgroundR) >> 8);
                                     byte g = (byte)((alpha * foregroundG + invAlpha * backgroundG) >> 8);
                                     byte b = (byte)((alpha * foregroundB + invAlpha * backgroundB) >> 8);
                                     
-                                    uint color = ((uint)a << 24) | ((uint)r << 16) | ((uint)g << 8) | b;
+                                    // Store the blended color in an unsigned integer.
+                                    uint color = ((uint)255 << 24) | ((uint)r << 16) | ((uint)g << 8) | b;
 
+                                    // Set the pixel to the blended color.
                                     Contents.Internal[canvasIdx] = color;
                                 }
                             }
                         }
                         else
                         {
-                            // Draw the BTF character
+                            // Draw the bitfont glyph.
                             for (int j = 0; j < glyph.Points.Count; j++)
                             {
-                                Contents[_fontWidth * CursorLeft + glyph.Points[j].X,
-                                    Font.GetHeight() * CursorTop + glyph.Points[j].Y] = foreColor;
+                                // Get the index of the framebuffer of where to draw the point at.
+                                int canvasIdx = (Font.GetHeight() * CursorTop + glyph.Points[j].Y) * Contents.Width + (_fontWidth * CursorLeft + glyph.Points[j].X);
+                                
+                                // Set the pixel to the current foreground color.
+                                Contents.Internal[canvasIdx] = foreColor.ARGB;
                             }
                         }
                     }
@@ -252,14 +241,13 @@ public sealed unsafe class SVGAIITerminal
                     CursorLeft++;
                     break;
             }
-            TryScroll();
         }
 
         UpdateRequest?.Invoke();
     }
 
     /// <summary>
-    /// Prints a new line character
+    /// Prints a new line character.
     /// </summary>
     public void WriteLine()
     {
@@ -268,39 +256,48 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Prints a string to the terminal with a new line character
+    /// Prints a string to the terminal with a new line character.
     /// </summary>
-    /// <param name="str">String to print</param>
-    public void WriteLine(object str) => Write(str + "\n");
+    /// <param name="str">The string to print.</param>
+    public void WriteLine(object str) => Write(str + "\n", ForegroundColor, BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal with a new line character
+    /// Prints a colored string to the terminal with a new line character.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    public void WriteLine(object str, ConsoleColor foreColor) => Write(str + "\n", foreColor);
+    /// <param name="str">String to print.</param>
+    /// <param name="foreColor">String foreground color.</param>
+    public void WriteLine(object str, ConsoleColor foreColor)
+        => Write(str + "\n", ColorConverter[(int)foreColor], BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal with a new line character
+    /// Prints a colored string to the terminal with a new line character.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    /// <param name="backColor">String background color</param>
-    public void WriteLine(object str, ConsoleColor foreColor, ConsoleColor backColor) => Write(str + "\n", foreColor, backColor);
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    /// <param name="backColor">The string's background color.</param>
+    public void WriteLine(object str, ConsoleColor foreColor, ConsoleColor backColor)
+        => Write(str + "\n", ColorConverter[(int)foreColor], ColorConverter[(int)backColor]);
+    
+    /// <summary>
+    /// Prints a colored string to the terminal with a new line character.
+    /// </summary>
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    public void WriteLine(object str, Color foreColor) => Write(str + "\n", foreColor, BackgroundColor);
 
     /// <summary>
-    /// Prints a colored string to the terminal with a new line character
+    /// Prints a colored string to the terminal with a new line character.
     /// </summary>
-    /// <param name="str">String to print</param>
-    /// <param name="foreColor">String foreground color</param>
-    /// <param name="backColor">String background color</param>
+    /// <param name="str">The string to print.</param>
+    /// <param name="foreColor">The string's foreground color.</param>
+    /// <param name="backColor">The string's background color.</param>
     public void WriteLine(object str, Color foreColor, Color backColor) => Write(str + "\n", foreColor, backColor);
 
     /// <summary>
-    /// Gets input from the user
+    /// Gets input from the user.
     /// </summary>
-    /// <param name="intercept">If set to false, the key pressed will be printed to the terminal</param>
-    /// <returns>Key pressed</returns>
+    /// <param name="intercept">If set to false, the key pressed will be printed to the terminal.</param>
+    /// <returns>The key pressed.</returns>
     public ConsoleKeyInfo ReadKey(bool intercept = false)
     {
         ForceDrawCursor();
@@ -309,7 +306,7 @@ public sealed unsafe class SVGAIITerminal
         {
             TryDrawCursor();
 
-            if (!KeyboardManager.TryReadKey(out var key))
+            if (!KeyboardManager.TryReadKey(out KeyEvent key))
             {
                 IdleRequest?.Invoke();
                 continue;
@@ -324,9 +321,9 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Gets input from the user
+    /// Gets input from the user.
     /// </summary>
-    /// <returns>Text inputted</returns>
+    /// <returns>The text inputted.</returns>
     public string ReadLine()
     {
         ForceDrawCursor();
@@ -347,9 +344,7 @@ public sealed unsafe class SVGAIITerminal
             switch (key.Key)
             {
                 case ConsoleKeyEx.Enter:
-                    // TODO: change over to ForceDrawCursor(true)
-                    Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, BackgroundColor);
-                    
+                    ForceDrawCursor(true);
                     TryScroll();
 
                     CursorLeft = 0;
@@ -409,10 +404,10 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Sets the cursor position
+    /// Sets the cursor position.
     /// </summary>
-    /// <param name="x">X coordinate</param>
-    /// <param name="y">Y coordinate</param>
+    /// <param name="x">The cursor X position.</param>
+    /// <param name="y">The cursor Y position.</param>
     public void SetCursorPosition(int x, int y)
     {
         CursorLeft = x;
@@ -420,23 +415,23 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Gets the cursor position
+    /// Gets the cursor position.
     /// </summary>
-    /// <returns>X and Y cursor coordinates</returns>
+    /// <returns>The cursor X and Y cursor position.</returns>
     public (int Left, int Top) GetCursorPosition()
     {
         return (CursorLeft, CursorTop);
     }
 
     /// <summary>
-    /// Plays a beep sound through the PC speaker
+    /// Plays a beep sound through the PC speaker.
     /// </summary>
-    /// <param name="freq">Sound frequency</param>
-    /// <param name="duration">Sound duration</param>
+    /// <param name="freq">The sound's frequency</param>
+    /// <param name="duration">The sound's duration</param>
     public void Beep(uint freq = 800, uint duration = 125) => PCSpeaker.Beep(freq, duration);
 
     /// <summary>
-    /// Sets the foreground and background colors to their defaults
+    /// Sets the foreground and background colors to their defaults.
     /// </summary>
     public void ResetColor()
     {
@@ -445,7 +440,7 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Scrolls the terminal if needed
+    /// Scrolls the terminal if needed.
     /// </summary>
     private void TryScroll()
     {
@@ -469,7 +464,7 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Forcefully draws the cursor
+    /// Forcefully draws the cursor.
     /// </summary>
     private void ForceDrawCursor(bool invert = false)
     {
@@ -484,7 +479,7 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Draws the cursor if needed
+    /// Draws the cursor if needed.
     /// </summary>
     private void TryDrawCursor()
     {
@@ -497,19 +492,19 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Gets the widest ASCII character of the ACF font
+    /// Gets the widest ASCII character of the ACF font.
     /// </summary>
-    /// <returns>The widest character's width</returns>
+    /// <returns>The widest character's width.</returns>
     private int GetWidestCharacterWidth()
     {
-        int width = 0;
+        var width = 0;
 
         for (char c = ' '; c < ' '; c++)
         {
-            // Get the glyph
+            // Get the glyph.
             var glyph = Font.GetGlyph(c);
             
-            // Check if the glyph is null
+            // Check if the glyph is null.
             if (glyph == null)
             {
                 CursorLeft++;
@@ -531,17 +526,17 @@ public sealed unsafe class SVGAIITerminal
     #region Fields
     
     /// <summary>
-    /// Terminal width in characters
+    /// The terminal width's in characters.
     /// </summary>
     public readonly int Width;
 
     /// <summary>
-    /// Terminal height in characters
+    /// The terminal height's in characters.
     /// </summary>
     public readonly int Height;
 
     /// <summary>
-    /// Converts <see cref="ConsoleColor"/> to <see cref="Color"/>
+    /// Converts <see cref="ConsoleColor"/> to <see cref="Color"/>.
     /// </summary>
     public readonly List<Color> ColorConverter = new()
     {
@@ -564,52 +559,52 @@ public sealed unsafe class SVGAIITerminal
     };
     
     /// <summary>
-    /// Console contents
+    /// The terminal's contents.
     /// </summary>
     public readonly Canvas Contents;
     
     /// <summary>
-    /// Console font
+    /// The terminal's font.
     /// </summary>
     public readonly FontFace Font;
 
     /// <summary>
-    /// Update request action
+    /// Update request action.
     /// </summary>
     public readonly Action? UpdateRequest;
     
     /// <summary>
-    /// Cursor X coordinate
+    /// The X cursor position.
     /// </summary>
     public int CursorLeft;
 
     /// <summary>
-    /// Cursor Y coordinate
+    /// The Y cursor position.
     /// </summary>
     public int CursorTop;
     
     /// <summary>
-    /// The parent canvas's height. Used for handling scrolling
+    /// The parent canvas's height. Used for handling scrolling.
     /// </summary>
     public int ParentHeight;
     
     /// <summary>
-    /// Is cursor visible
+    /// Is cursor visible.
     /// </summary>
     public bool CursorVisible = true;
 
     /// <summary>
-    /// Foreground console color
+    /// Foreground console color.
     /// </summary>
     public Color ForegroundColor = Color.White;
 
     /// <summary>
-    /// Background console color
+    /// Background console color.
     /// </summary>
     public Color BackgroundColor = Color.Black;
 
     /// <summary>
-    /// Cursor state
+    /// The cursor state.
     /// </summary>
     public CursorShape CursorShape
     {
@@ -622,47 +617,47 @@ public sealed unsafe class SVGAIITerminal
     }
 
     /// <summary>
-    /// Called in a loop when ReadLine or ReadKey are idling
+    /// Called in a loop when ReadLine or ReadKey are idling.
     /// </summary>
     public Action? IdleRequest;
 
     /// <summary>
-    /// Called when the terminal wants to scroll up but the buffer doesn't need to
+    /// Called when the terminal wants to scroll up but the buffer doesn't need to.
     /// </summary>
     public Action? ScrollRequest;
 
     /// <summary>
-    /// Tab indentation
+    /// Tab indentation.
     /// </summary>
     private const string TabIndentation = "    ";
 
     /// <summary>
-    /// Font width
+    /// Font width.
     /// </summary>
     private readonly ushort _fontWidth;
     
     /// <summary>
-    /// Last second
+    /// Last second.
     /// </summary>
     private static byte _lastSecond = RTC.Second;
 
     /// <summary>
-    /// Cursor state
+    /// Cursor state.
     /// </summary>
     private static bool _cursorState = true;
     
     /// <summary>
-    /// Font excess offset
+    /// Font excess offset.
     /// </summary>
     private int _fontExcessOffset;
     
     /// <summary>
-    /// Last input
+    /// Last input.
     /// </summary>
     private string _lastInput = string.Empty;
     
     /// <summary>
-    /// Cursor shape
+    /// Cursor shape.
     /// </summary>
     private CursorShape _cursorShape = CursorShape.Block;
 
