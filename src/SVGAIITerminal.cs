@@ -23,7 +23,7 @@ namespace SVGAIITerminal;
 /// <summary>
 /// A fast, instanceable & high resolution terminal.
 /// </summary>
-public sealed unsafe class SVGAIITerminal
+public unsafe class SVGAIITerminal
 {
     #region Constructors
 
