@@ -6,9 +6,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using Cosmos.HAL;
-using Cosmos.Core;
 using Cosmos.System;
 using SVGAIITerminal.TextKit;
 using PCSpeaker = Cosmos.System.PCSpeaker;
