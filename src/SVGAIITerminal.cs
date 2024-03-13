@@ -41,10 +41,8 @@ public unsafe class SVGAIITerminal
         this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
         Contents = Display.GetDisplay((ushort)Width, (ushort)Height);
-        UpdateRequest = () =>
-        {
-            ((Display)Contents).Update();
-        };
+        UpdateRequest = () => { ((Display)Contents).Update(); };
+        IdleRequest = () => { if (KeyboardManager.TryReadKey(out var key)) KeyBuffer.Enqueue(key); };
     }
 
     /// <summary>
@@ -63,6 +61,7 @@ public unsafe class SVGAIITerminal
         ParentHeight = Height;
         Contents = Screen ?? throw new ArgumentNullException(nameof(Screen));
         UpdateRequest = Screen.Update;
+        IdleRequest = () => { if (KeyboardManager.TryReadKey(out var key)) KeyBuffer.Enqueue(key); };
     }
 
     /// <summary>
@@ -72,7 +71,8 @@ public unsafe class SVGAIITerminal
     /// <param name="Height">The height of the terminal.</param>
     /// <param name="Font">The font that's going to be used by the terminal.</param>
     /// <param name="UpdateRequest">The function that the terminal calls for the kernel to render the terminal.</param>
-    public SVGAIITerminal(int Width, int Height, FontFace Font, Action? UpdateRequest)
+    /// <param name="IdleRequest"
+    public SVGAIITerminal(int Width, int Height, FontFace Font, Action? UpdateRequest, Action? IdleRequest = default)
     {
         this.Font = Font;
         _fontWidth = (ushort)GetWidestCharacterWidth();
@@ -81,6 +81,12 @@ public unsafe class SVGAIITerminal
         ParentHeight = Height;
         Contents = new Canvas((ushort)Width, (ushort)Height);
         this.UpdateRequest = UpdateRequest;
+        this.IdleRequest = IdleRequest;
+
+        if (IdleRequest == default)
+        {
+            IdleRequest = () => { if (KeyboardManager.TryReadKey(out var key)) KeyBuffer.Enqueue(key); };
+        }
     }
 
     #endregion
@@ -165,7 +171,7 @@ public unsafe class SVGAIITerminal
                     Contents.DrawFilledRectangle(_fontWidth * CursorLeft, Font.GetHeight() * CursorTop, _fontWidth, (ushort)Font.GetHeight(), 0, backColor);
 
                     // Check if it's necessary to draw the character.
-                    if (c != ' ')
+                    if (CursorTop >= 0 && c != ' ')
                     {
                         // Get the glyph.
                         var glyph = Font.GetGlyph(c);
@@ -304,7 +310,7 @@ public unsafe class SVGAIITerminal
         {
             TryDrawCursor();
 
-            if (!KeyboardManager.TryReadKey(out KeyEvent key))
+            if (!KeyBuffer.TryDequeue(out var key))
             {
                 IdleRequest?.Invoke();
                 continue;
@@ -333,7 +339,7 @@ public unsafe class SVGAIITerminal
         {
             TryDrawCursor();
 
-            if (!KeyboardManager.TryReadKey(out var key))
+            if (!KeyBuffer.TryDequeue(out var key))
             {
                 IdleRequest?.Invoke();
                 continue;
@@ -623,6 +629,11 @@ public unsafe class SVGAIITerminal
     /// Called when the terminal wants to scroll up but the buffer doesn't need to.
     /// </summary>
     public Action? ScrollRequest;
+
+    /// <summary>
+    /// The key buffer. Used for input.
+    /// </summary>
+    public static Queue<KeyEvent> KeyBuffer = new Queue<KeyEvent>();
 
     /// <summary>
     /// Tab indentation.
