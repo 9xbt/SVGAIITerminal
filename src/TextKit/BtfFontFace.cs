@@ -55,10 +55,19 @@ public class BtfFontFace : FontFace
     private Glyph ParseGlyph(char c)
     {
         // Create new empty glyph.
+        #if USE_GRAPEGL
+        GrapeGL.Graphics.Fonts.Glyph Temp = new(0, _size);
+        #else
         PrismAPI.Graphics.Fonts.Glyph Temp = new(0, _size);
+        #endif
 
         // Get the index of the character in the font.
+        
+        #if USE_GRAPEGL
+        int Index = GrapeGL.Graphics.Fonts.Font.DefaultCharset.IndexOf(c);
+        #else
         int Index = PrismAPI.Graphics.Fonts.Font.DefaultCharset.IndexOf(c);
+        #endif
 
         // Check if there is a glyph for the given character.
         if (Index < 0)
