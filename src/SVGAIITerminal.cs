@@ -8,15 +8,11 @@ using System;
 using System.Collections.Generic;
 using Cosmos.HAL;
 using Cosmos.System;
-using SVGAIITerminal.TextKit;
 using PCSpeaker = Cosmos.System.PCSpeaker;
-#if USE_GRAPEGL
 using GrapeGL.Graphics;
+using GrapeGL.Graphics.Fonts;
 using GrapeGL.Hardware.GPU;
-#else
-using PrismAPI.Graphics;
-using PrismAPI.Hardware.GPU;
-#endif
+
 
 namespace SVGAIITerminal;
 
@@ -60,7 +56,7 @@ public unsafe class SVGAIITerminal
         this.Height = Height / Font.GetHeight();
         ParentHeight = Height;
         Contents = Screen ?? throw new ArgumentNullException(nameof(Screen));
-        UpdateRequest = Screen.Update;
+        UpdateRequest = () => { Screen.Update(); };
         IdleRequest = () => { if (KeyboardManager.TryReadKey(out var key)) KeyBuffer.Enqueue(key); };
     }
 
@@ -183,63 +179,7 @@ public unsafe class SVGAIITerminal
                             break;
                         }
 
-                        if (glyph.Points.Count == 0)
-                        {
-                            // Get the X and Y position of where to draw the glyph at.
-                            var x = _fontWidth * CursorLeft + glyph.Left;
-                            var y = Font.GetHeight() * CursorTop + Font.GetHeight() - glyph.Top - _fontExcessOffset;
-                            
-                            // Draw the ACF glyph.
-                            for (int yy = 0; yy < glyph.Height; yy++)
-                            {
-                                for (int xx = 0; xx < glyph.Width; xx++)
-                                {
-                                    // Get the alpha value of the glyph's pixel and the inverted value.
-                                    uint alpha = glyph.Bitmap[yy * glyph.Width + xx];
-                                    uint invAlpha = 256 - alpha;
-
-                                    // Get the index of the framebuffer of where to draw the point at.
-                                    int canvasIdx = (y + yy) * Contents.Width + x + xx;
-
-                                    // Get the background ARGB value and the glyph color's ARGB value.
-                                    uint backgroundArgb = Contents.Internal[canvasIdx];
-                                    uint glyphColorArgb = foreColor.ARGB;
-                                    
-                                    // Store the individual background color's R, G and B values.
-                                    byte backgroundR = (byte)((backgroundArgb >> 16) & 0xFF);
-                                    byte backgroundG = (byte)((backgroundArgb >> 8) & 0xFF);
-                                    byte backgroundB = (byte)(backgroundArgb & 0xFF);
-
-                                    // Store the individual glyph foreground color's R, G and B values.
-                                    byte foregroundR = (byte)((glyphColorArgb >> 16) & 0xFF);
-                                    byte foregroundG = (byte)((glyphColorArgb >> 8) & 0xFF);
-                                    byte foregroundB = (byte)((glyphColorArgb) & 0xFF);
-                                    
-                                    // Get the individual R, G and B values for the blended color.
-                                    byte r = (byte)((alpha * foregroundR + invAlpha * backgroundR) >> 8);
-                                    byte g = (byte)((alpha * foregroundG + invAlpha * backgroundG) >> 8);
-                                    byte b = (byte)((alpha * foregroundB + invAlpha * backgroundB) >> 8);
-                                    
-                                    // Store the blended color in an unsigned integer.
-                                    uint color = ((uint)255 << 24) | ((uint)r << 16) | ((uint)g << 8) | b;
-
-                                    // Set the pixel to the blended color.
-                                    Contents.Internal[canvasIdx] = color;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Draw the bitfont glyph.
-                            for (int j = 0; j < glyph.Points.Count; j++)
-                            {
-                                // Get the index of the framebuffer of where to draw the point at.
-                                int canvasIdx = (Font.GetHeight() * CursorTop + glyph.Points[j].Y) * Contents.Width + (_fontWidth * CursorLeft + glyph.Points[j].X);
-                                
-                                // Set the pixel to the current foreground color.
-                                Contents.Internal[canvasIdx] = foreColor.ARGB;
-                            }
-                        }
+                        Contents.DrawGlyph(_fontWidth * CursorLeft /*+ glyph.Left*/, Font.GetHeight() * CursorTop + Font.GetHeight() - _fontExcessOffset, glyph, foreColor);
                     }
 
                     CursorLeft++;
@@ -633,7 +573,7 @@ public unsafe class SVGAIITerminal
     /// <summary>
     /// The key buffer. Used for input.
     /// </summary>
-    public static Queue<KeyEvent> KeyBuffer = new Queue<KeyEvent>();
+    public Queue<KeyEvent> KeyBuffer = new Queue<KeyEvent>();
 
     /// <summary>
     /// Tab indentation.
