@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<Title>SVGAIITerminal</Title>
-		<Version>2.0</Version>
+		<Version>2.1</Version>
 		<Company>xrc2</Company>
 		<Description>A fast, instanceable &amp; high resolution C# terminal emulator for Cosmos operating systems</Description>
 		<Copyright>Copyright © 2023-2024 Mobren</Copyright>
