@@ -13,11 +13,10 @@ using GrapeGL.Graphics;
 using GrapeGL.Graphics.Fonts;
 using GrapeGL.Hardware.GPU;
 
-
 namespace SVGAIITerminal;
 
 /// <summary>
-/// A fast, instanceable & high resolution terminal.
+/// A fast, instanceable and high resolution terminal.
 /// </summary>
 public unsafe class SVGAIITerminal
 {
