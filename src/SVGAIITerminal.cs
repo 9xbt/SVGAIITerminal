@@ -231,7 +231,7 @@ public unsafe class SVGAIITerminal
     /// <summary>
     /// Tells if Heap.Collect should be used in Console.ReadLine and ReadKey
     /// </summary>
-    public bool useHeapCollect = true;
+    public bool UseHeapCollect = true;
     
     /// <summary>
     /// Prints a colored string to the terminal with a new line character.
@@ -252,7 +252,7 @@ public unsafe class SVGAIITerminal
 
         while (true)
         {
-            if(useHeapCollect)
+            if(UseHeapCollect)
             {
                 Heap.Collect();
             }
@@ -352,7 +352,7 @@ public unsafe class SVGAIITerminal
                     ForceDrawCursor();
                     break;
             }
-            if (useHeapCollect)
+            if (UseHeapCollect)
             {
                 Heap.Collect();
             }
