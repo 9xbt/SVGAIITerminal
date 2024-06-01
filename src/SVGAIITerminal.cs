@@ -229,6 +229,11 @@ public unsafe class SVGAIITerminal
     public void WriteLine(object str, Color foreColor) => Write(str + "\n", foreColor, BackgroundColor);
 
     /// <summary>
+    /// Tells if Heap.Collect should be used in Console.ReadLine and ReadKey
+    /// </summary>
+    public bool useHeapCollect = true;
+    
+    /// <summary>
     /// Prints a colored string to the terminal with a new line character.
     /// </summary>
     /// <param name="str">The string to print.</param>
@@ -247,6 +252,10 @@ public unsafe class SVGAIITerminal
 
         while (true)
         {
+            if(useHeapCollect)
+            {
+                Heap.Collect();
+            }
             TryDrawCursor();
 
             if (!KeyBuffer.TryDequeue(out var key))
@@ -342,6 +351,10 @@ public unsafe class SVGAIITerminal
 
                     ForceDrawCursor();
                     break;
+            }
+            if (useHeapCollect)
+            {
+                Heap.Collect();
             }
         }
     }
