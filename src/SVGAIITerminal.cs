@@ -12,6 +12,7 @@ using PCSpeaker = Cosmos.System.PCSpeaker;
 using GrapeGL.Graphics;
 using GrapeGL.Graphics.Fonts;
 using GrapeGL.Hardware.GPU;
+using Cosmos.Core.Memory;
 
 namespace SVGAIITerminal;
 
@@ -252,7 +253,7 @@ public unsafe class SVGAIITerminal
 
         while (true)
         {
-            if(UseHeapCollect)
+            if (UseHeapCollect)
             {
                 Heap.Collect();
             }
